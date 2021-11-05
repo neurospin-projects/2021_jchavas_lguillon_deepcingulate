@@ -136,7 +136,15 @@ def train(config):
                 images.append(first_view[0, 0, first_view.shape[2]//2, :, :])
                 images.append(second_view[0, 0, second_view.shape[2]//2, :, :])
           for ax, im in zip(grid, images):
-                ax.imshow(im)tuple(config.input_size), 
+                ax.imshow(im)
+                ax.axis('off')
+          plt.show()
+          
+          # Plots one representation image
+          fig = plt.figure(figsize=(4., 8.), dpi=400)
+          plot_output(first(self.save_output.outputs.values()), buffer=False)
+          plt.show() 
+          
     else:
           model = ContrastiveLearner(config,
                                     mode="encoder",

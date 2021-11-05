@@ -32,6 +32,12 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license version 2 and that you ac8
+
+import numbers
+from collections import namedtuple
+
+import numpy as np
+import torch
 from scipy.ndimage import rotate
 import skimage
 from sklearn.preprocessing import OneHotEncoder
