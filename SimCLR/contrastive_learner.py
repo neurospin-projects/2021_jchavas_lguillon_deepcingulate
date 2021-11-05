@@ -40,13 +40,13 @@ https://learnopencv.com/tensorboard-with-pytorch-lightning
 
 import torch
 import numpy as np
-from dicoFolding.losses import NTXenLoss
-from dicoFolding.models.densenet import DenseNet
+from SimCLR.losses import NTXenLoss
+from SimCLR.models.densenet import DenseNet
 from sklearn.manifold import TSNE
 
-from dicoFolding.postprocessing.visualize_tsne import plot_tsne
-from dicoFolding.postprocessing.visualize_tsne import plot_img
-from dicoFolding.postprocessing.visualize_tsne import plot_output
+from SimCLR.postprocessing.visualize_tsne import plot_tsne
+from SimCLR.postprocessing.visualize_tsne import plot_img
+from SimCLR.postprocessing.visualize_tsne import plot_output
 
 from toolz.itertoolz import last, first
 

@@ -43,11 +43,11 @@ import logging
 import hydra
 import torch
 import pytorch_lightning as pl
-from dicoFolding.contrastive_learner import ContrastiveLearner
-from dicoFolding.contrastive_learner_test import ContrastiveLearnerTest
-from dicoFolding.datamodule import DataModule
-from dicoFolding.utils import process_config
-from dicoFolding.postprocessing.visualize_tsne import plot_output
+from SimCLR.contrastive_learner import ContrastiveLearner
+from SimCLR.contrastive_learner_test import ContrastiveLearnerTest
+from SimCLR.datamodule import DataModule
+from SimCLR.utils import process_config
+from SimCLR.postprocessing.visualize_tsne import plot_output
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.tensorboard import SummaryWriter
@@ -96,7 +96,7 @@ def train(config):
           images = []
           np.save("input_i.npy", input_i[0, 0, :, :, :])
           np.save("input_j.npy", input_j[0, 0, :, :, :])
-          vol_i = aims.Volume(1, 80, 80, 80, dtype=np.int32)
+          vol_i = aims.Volume(tuple(config.input_size), dtype=np.int32)
           np.asarray(vol_i)[:] = input_i[0, :, :, :, :]
           aims.write(vol_i, 'input_i.nii')
           print(np.unique(input_i[0, :, :, :, :]))
@@ -136,15 +136,7 @@ def train(config):
                 images.append(first_view[0, 0, first_view.shape[2]//2, :, :])
                 images.append(second_view[0, 0, second_view.shape[2]//2, :, :])
           for ax, im in zip(grid, images):
-                ax.imshow(im)
-                ax.axis('off')
-          plt.show()
-          
-          # Plots one representation image
-          fig = plt.figure(figsize=(4., 8.), dpi=400)
-          plot_output(first(self.save_output.outputs.values()), buffer=False)
-          plt.show()   
-          
+                ax.imshow(im)tuple(config.input_size), 
     else:
           model = ContrastiveLearner(config,
                                     mode="encoder",

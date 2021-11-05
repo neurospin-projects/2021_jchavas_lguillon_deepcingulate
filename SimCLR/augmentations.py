@@ -31,13 +31,7 @@
 # same conditions as regards security.
 #
 # The fact that you are presently reading this means that you have had
-# knowledge of the CeCILL license version 2 and that you accept its terms.
-
-import numbers
-from collections import namedtuple
-
-import numpy as np
-import torch
+# knowledge of the CeCILL license version 2 and that you ac8
 from scipy.ndimage import rotate
 import skimage
 from sklearn.preprocessing import OneHotEncoder
@@ -77,11 +71,12 @@ class RotateTensor(object):
     def __call__(self, tensor):
 
         arr = tensor.numpy()[0]
+        arr_shape = arr.shape
         flat_im = np.reshape(arr, (-1, 1))
         im_encoder = OneHotEncoder(sparse=False, categories='auto')
         onehot_im = im_encoder.fit_transform(flat_im)
         ## rotate one hot im
-        onehot_im = onehot_im.reshape(80, 80, 80, -1)
+        onehot_im = onehot_im.reshape(*arr_shape, -1)
         onehot_im_rot = np.empty_like(onehot_im)
         n_cat = onehot_im.shape[-1]
         for axes in (0,1), (0,2), (1,2):
@@ -94,7 +89,7 @@ class RotateTensor(object):
                                 mode='constant',
                                 cval=0)
         im_rot_flat = im_encoder.inverse_transform(np.reshape(onehot_im_rot, (-1, n_cat)))
-        im_rot = np.reshape(im_rot_flat, (80, 80, 80))
+        im_rot = np.reshape(im_rot_flat, arr_shape)
         arr_rot = np.expand_dims(
             im_rot,
             axis=0)

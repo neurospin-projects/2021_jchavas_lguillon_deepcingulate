@@ -42,10 +42,10 @@ import pandas as pd
 import torch
 import torchvision.transforms as transforms
 from deep_folding.preprocessing.pynet_transforms import PaddingTensor
-from dicoFolding.augmentations import OnlyBottomTensor
-from dicoFolding.augmentations import RotateTensor
-from dicoFolding.augmentations import SimplifyTensor
-from dicoFolding.augmentations import MixTensor
+from SimCLR.augmentations import OnlyBottomTensor
+from SimCLR.augmentations import RotateTensor
+from SimCLR.augmentations import SimplifyTensor
+from SimCLR.augmentations import MixTensor
 
 _ALL_SUBJECTS = -1
 
