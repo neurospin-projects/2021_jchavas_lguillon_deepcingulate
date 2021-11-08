@@ -47,8 +47,8 @@ from preprocess import *
 
 #from .pynet_transforms import *
 
-subject_dir = "/neurospin/dico/data/deep_folding/papers/midl2022/data"
-data_dir = "/neurospin/dico/data/deep_folding/new_v1/crops/CINGULATE/mask/sulcus_based/2mm/"
+subject_dir = "/neurospin/dico/data/deep_folding/current/"
+data_dir = "/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/"
 
 
 class SkeletonDataset():
@@ -135,7 +135,7 @@ def create_train_set(data_dir=data_dir, side='R'):
     train_set = SkeletonDataset(dataframe=tmp, filenames=filenames)
 
     # Data Augmentation application
-    train_set = AugDatasetTransformer(train_set)
+    #train_set = AugDatasetTransformer(train_set)
 
     return train_set
 

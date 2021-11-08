@@ -74,7 +74,8 @@ class VAE(nn.Module):
         self.n_latent = n_latent
         c,h,w,d = in_shape
         self.depth = depth
-        self.z_dim = h//2**depth # receptive field downsampled 2 times
+        self.z_dim = w//2**depth # receptive field downsampled 2 times
+        self.z_dim_x = h//2**depth
 
         modules_encoder = []
         for step in range(depth):
@@ -90,16 +91,17 @@ class VAE(nn.Module):
             modules_encoder.append(('LeakyReLU%sa' %step, nn.LeakyReLU()))
         self.encoder = nn.Sequential(OrderedDict(modules_encoder))
 
-        self.z_mean = nn.Linear(64 * self.z_dim**3, n_latent) # 8000 -> n_latent = 3
-        self.z_var = nn.Linear(64 * self.z_dim**3, n_latent) # 8000 -> n_latent = 3
-        self.z_develop = nn.Linear(n_latent, 64 * self.z_dim**3) # n_latent -> 8000
+        self.z_mean = nn.Linear(64 * self.z_dim**2 * self.z_dim_x , n_latent) # 8000 -> n_latent = 3
+        self.z_var = nn.Linear(64 * self.z_dim**2 * self.z_dim_x, n_latent) # 8000 -> n_latent = 3
+        self.z_develop = nn.Linear(n_latent, 64 *self.z_dim**2 * self.z_dim_x) # n_latent -> 8000
 
         modules_decoder = []
         for step in range(depth-1):
             in_channels = out_channels
             out_channels = in_channels // 2
+            ini = 1 if step==0 else 0
             modules_decoder.append(('convTrans3d%s' %step, nn.ConvTranspose3d(in_channels,
-                        out_channels, kernel_size=2, stride=2, padding=0)))
+                        out_channels, kernel_size=2, stride=2, padding=0, output_padding=(ini,0,0))))
             modules_decoder.append(('normup%s' %step, nn.BatchNorm3d(out_channels)))
             modules_decoder.append(('ReLU%s' %step, nn.ReLU()))
             modules_decoder.append(('convTrans3d%sa' %step, nn.ConvTranspose3d(out_channels,
@@ -108,7 +110,7 @@ class VAE(nn.Module):
             modules_decoder.append(('ReLU%sa' %step, nn.ReLU()))
         modules_decoder.append(('convtrans3dn', nn.ConvTranspose3d(16, 1, kernel_size=2,
                         stride=2, padding=0)))
-        modules_decoder.append(('conv_final', nn.Conv3d(1, 3, kernel_size=1, stride=1)))
+        modules_decoder.append(('conv_final', nn.Conv3d(1, 2, kernel_size=1, stride=1)))
         self.decoder = nn.Sequential(OrderedDict(modules_decoder))
         self.weight_initialization()
 
@@ -136,17 +138,25 @@ class VAE(nn.Module):
         return (noise * stddev) + mean
 
     def encode(self, x):
+        #print(x.shape)
         x = self.encoder(x)
+        #print(x.shape)
         x = nn.functional.normalize(x, p=2)
         x = x.view(x.size(0), -1)
+        #print(x.shape)
         mean = self.z_mean(x)
+        #print(mean.shape)
         var = self.z_var(x)
         return mean, var
 
     def decode(self, z):
+        #print("z", z.shape)
         out = self.z_develop(z)
-        out = out.view(z.size(0), 16 * 2**(self.depth-1), self.z_dim, self.z_dim, self.z_dim)
+        #print(out.shape)
+        out = out.view(z.size(0), 16 * 2**(self.depth-1), self.z_dim_x, self.z_dim, self.z_dim)
+        #print(out.shape)
         out = self.decoder(out)
+        #print(out.shape)
         return out
 
     def forward(self, x):

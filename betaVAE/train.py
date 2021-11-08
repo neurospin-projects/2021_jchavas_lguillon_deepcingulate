@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from operator import itemgetter
 from functools import partial
+from torchsummary import summary
 
 from vae import *
 import datasets
@@ -20,8 +21,9 @@ def train_vae(config, root_dir=None):
         if torch.cuda.device_count() > 1:
             vae = nn.DataParallel(vae)
     vae.to(device)
+    summary(vae, (1, 12, 48, 48))
 
-    weights = [2, 1, 7]
+    weights = [1, 7]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
     optimizer = torch.optim.Adam(vae.parameters(), lr=config["lr"])
