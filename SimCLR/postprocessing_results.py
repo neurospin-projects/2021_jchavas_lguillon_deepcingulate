@@ -43,11 +43,11 @@ import logging
 import hydra
 import torch
 import pytorch_lightning as pl
-from dicoFolding.contrastive_learner import ContrastiveLearner
-from dicoFolding.contrastive_learner_test import ContrastiveLearnerTest
-from dicoFolding.datamodule import DataModule
-from dicoFolding.utils import process_config
-from dicoFolding.postprocessing.visualize_tsne import plot_output
+from SimCLR.contrastive_learner import ContrastiveLearner
+from SimCLR.contrastive_learner_test import ContrastiveLearnerTest
+from SimCLR.datamodule import DataModule
+from SimCLR.utils import process_config
+from SimCLR.postprocessing.visualize_tsne import plot_output
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.tensorboard import SummaryWriter
@@ -57,9 +57,9 @@ import numpy as np
 from mpl_toolkits.axes_grid1 import ImageGrid
 from sklearn.cluster import KMeans
 
-from dicoFolding.postprocessing.visualize_tsne import plot_tsne
-from dicoFolding.postprocessing.visualize_nearest_neighhbours import plot_knn_examples
-from dicoFolding.postprocessing.visualize_nearest_neighhbours import plot_knn_meshes
+from SimCLR.postprocessing.visualize_tsne import plot_tsne
+from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_examples
+from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_meshes
 
 from soma import aims
 
@@ -136,11 +136,11 @@ def postprocessing_results(config):
     data_module_visu.setup(stage='validate', mode='visualization')
     
     plot_knn_meshes(embeddings=embeddings,
-                      filenames=filenames,
-                      dataset=data_module_visu.dataset_val,
-                      n_neighbors=6,
-                      num_examples=3
-                      )
+                    filenames=filenames,
+                    dataset=data_module_visu.dataset_val,
+                    n_neighbors=6,
+                    num_examples=3
+                    )
     
     plot_knn_examples(embeddings=embeddings,
                       filenames=filenames,

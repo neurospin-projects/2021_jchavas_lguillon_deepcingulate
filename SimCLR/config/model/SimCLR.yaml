@@ -2,7 +2,7 @@
 batch_size: 16
 pin_mem: True
 input_size: (1, 12, 48, 48)
-patch_size: 10
+patch_size: [1, 5, 20, 20]
 partition: [0.8, 0.2, 0.]
 num_cpu_workers: 48
 temperature: 0.1
@@ -16,4 +16,4 @@ nb_steps_per_flush_logs: 8
 seed: 42
 start_epoch: 0
 max_angle: 10
-checkpoint_path: 
+checkpoint_path: /host/volatile/jc225751/Runs/23_to_midl2021_software//Output/first-model/logs/default/version_0/checkpoints/epoch=99-step=5599.ckpt

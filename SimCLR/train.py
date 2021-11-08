@@ -56,6 +56,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import ImageGrid
 
+from toolz.itertoolz import first
+
 from soma import aims
 
 tb_logger = pl_loggers.TensorBoardLogger('logs')
@@ -106,7 +108,7 @@ def train(config):
           for ax, im in zip(grid, images):
                 ax.imshow(im)
                 ax.axis('off')
-                ax.set_title(np.unique(im)[1], fontsize=4)
+                ax.set_title(np.unique(im)[0], fontsize=4)
           plt.show()
           
           # Show the views of the first skeleton after each epoch
@@ -117,7 +119,7 @@ def train(config):
           summary(model, tuple(config.input_size), device="cpu")
           trainer = pl.Trainer(
               gpus=1,
-              max_epochs=config.max_epochs,
+              max_epochs=config.max_epochs+1,
               logger=tb_logger,
               flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
               resume_from_checkpoint=config.checkpoint_path)
@@ -127,7 +129,7 @@ def train(config):
           # Plots the views of the first element
           fig = plt.figure(figsize=(4., 8.), dpi=400)
           grid = ImageGrid(fig, 111,
-                           nrows_ncols = (nb_elements//4, 8),
+                           nrows_ncols = (max(nb_elements//4,1), 8),
                            axes_pad=0.2,)
           images = []
           for i in range(nb_elements):
@@ -141,10 +143,10 @@ def train(config):
           plt.show()
           
           # Plots one representation image
-          fig = plt.figure(figsize=(4., 8.), dpi=400)
-          plot_output(first(self.save_output.outputs.values()), buffer=False)
-          plt.show() 
-          
+      #     fig = plt.figure(figsize=(4., 8.), dpi=400)
+      #     plot_output(first(model.save_output.outputs.values()), buffer=False)
+      #     plt.show() 
+
     else:
           model = ContrastiveLearner(config,
                                     mode="encoder",
@@ -158,7 +160,7 @@ def train(config):
               resume_from_checkpoint=config.checkpoint_path)
           trainer.fit(model, data_module)
           
-    print("Number of hooks: ", len(model.save_output.outputs))
+          print("Number of hooks: ", len(model.save_output.outputs))
 
 
 if __name__ == "__main__":
