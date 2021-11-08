@@ -6,6 +6,8 @@ from sklearn.neighbors import NearestNeighbors
 import anatomist.api as anatomist
 from soma import aims
 import colorado as cld
+from deep_folding.anatomist_tools.utils import remove_hull
+import PIL
 
 """Inspired from lightly https://docs.lightly.ai/tutorials/package/tutorial_simclr_clothing.html
 """
@@ -15,7 +17,7 @@ log = logging.getLogger(__name__)
 def get_image_as_np_array(filename: str):
     """Returns an image as an numpy array
     """
-    img = Image.open(filename)
+    img = PIL.Image.open(filename)
     return np.asarray(img)
 
 def get_input(dataset, filenames, idx):
@@ -88,8 +90,14 @@ def plot_knn_meshes(embeddings, filenames, dataset, n_neighbors=3, num_examples=
 
     a = anatomist.Anatomist()
     view = get_input(dataset, filenames, 0)
-    im = create_array_without_hull(view)
-    mesh = create_mesh_from_array(im)
+
+    # Converts from tensor to aims volume
+    arr = view[0,:].numpy()
+    arr = np.reshape(arr, arr.shape + (1,)).astype(np.int16)
+    vol = aims.Volume(arr)
+
+    # Creates mesh without hull
+    _, _, mesh = remove_hull.create_one_mesh(vol)
     
     aw = a.createWindow('3D')
     am = a.toAObject(mesh)

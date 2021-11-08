@@ -51,11 +51,13 @@ from toolz.itertoolz import last, first
 class ContrastiveLearnerTest(DenseNet):
 
     def __init__(self, config, mode, drop_rate, sample_data):
-        super(ContrastiveLearnerTest, self).__init__(growth_rate=32,
-                                                 block_config=(6, 12, 24, 16),
-                                                 num_init_features=64,
+        super(ContrastiveLearnerTest, self).__init__(growth_rate=config.growth_rate,
+                                                 block_config=config.block_config,
+                                                 num_init_features=config.num_init_features,
+                                                 num_representation_features=config.num_representation_features,
+                                                 num_outputs=config.num_outputs,
                                                  mode=mode,
-                                                 drop_rate=drop_rate)
+                                                 drop_rate=config.drop_rate)
         self.config = config
         self.sample_data = sample_data
         self.sample_i = []
