@@ -127,11 +127,11 @@ def create_train_set(data_dir=data_dir, side='R'):
     train_list['subjects'] = train_list['subjects'].astype('str')
 
     tmp = pd.read_pickle(os.path.join(data_dir, f"{side}skeleton.pkl")).T
-    tmp = tmp.rename(columns={0:'subjects'})
+    #tmp = tmp.rename(columns={0:'subjects'})
     tmp.index.astype('str')
 
-    tmp.merge(train_list, left_on = tmp.index, right_on='subjects')
-    filenames = list(tmp.index)
+    tmp = tmp.merge(train_list, left_on = tmp.index, right_on='subjects', how='right')
+    filenames = list(train_list['subjects'])
     train_set = SkeletonDataset(dataframe=tmp, filenames=filenames)
 
     # Data Augmentation application
