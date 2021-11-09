@@ -62,7 +62,7 @@ def train_vae(config, checkpoint_dir=None, data_dir=None):
             num_workers=8,
             sampler=test_subsampler)
 
-        for epoch in range(2):  # loop over the dataset multiple times
+        for epoch in range(200):  # loop over the dataset multiple times
             #print(epoch)
             running_loss = 0.0
             epoch_steps = 0
@@ -105,21 +105,21 @@ def train_vae(config, checkpoint_dir=None, data_dir=None):
                     encoding[path] = np.array(torch.squeeze(z, dim=0).cpu().detach().numpy())
                     val_loss += loss.cpu().numpy()
                     val_steps += 1
-
-            # Evaluation of clustering quality
-            encoded = [encoding[k][0] for k in encoding.keys()]
-            #print(encoded)
-            X = encoded
-            #X = np.array(encoding)
-            # On latent space
-            kmeans = KMeans(n_clusters=2, random_state=0).fit_predict(X)
-            kmean_latent.append(metrics.silhouette_score(X, kmeans))
-            # On a reduced latent space
-            X_embedded = TSNE(n_components=2).fit_transform(X)
-            kmeans3d = KMeans(n_clusters=2, random_state=0).fit_predict(X_embedded)
-            kmean_tsne.append(metrics.silhouette_score(X_embedded, kmeans3d))
-
             fold_loss.append(val_loss / val_steps)
+
+        # Evaluation of clustering quality
+        encoded = [encoding[k][0] for k in encoding.keys()]
+        #print(encoded)
+        X = encoded
+        #X = np.array(encoding)
+        # On latent space
+        kmeans = KMeans(n_clusters=2, random_state=0).fit_predict(X)
+        kmean_latent.append(metrics.silhouette_score(X, kmeans))
+        # On a reduced latent space
+        X_embedded = TSNE(n_components=2).fit_transform(X)
+        kmeans3d = KMeans(n_clusters=2, random_state=0).fit_predict(X_embedded)
+        kmean_tsne.append(metrics.silhouette_score(X_embedded, kmeans3d))
+
     fold_average = sum(fold_loss)/5
     checkpoint_dir = '/volatile/lg261972'
     with tune.checkpoint_dir(epoch_steps) as checkpoint_dir:
@@ -187,4 +187,4 @@ def main(num_samples, max_num_epochs, gpus_per_trial):
 
 
 if __name__=='__main__':
-    main(1, 5, 1)
+    main(100, 200, 1)
