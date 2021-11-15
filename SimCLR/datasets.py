@@ -195,9 +195,14 @@ def create_sets(config, mode='training'):
     """
 
     # Loads crops from all subjects
-    pickle_file_path = config.pickle_file
-    all_data = pd.read_pickle(pickle_file_path)
-    all_subjects = all_data.columns.tolist()
+    pickle_file_path = config.pickle_normal
+    normal_data = pd.read_pickle(pickle_file_path)
+    normal_subjects = normal_data.columns.tolist()
+
+    # Loads bencmarks from all subjects
+    pickle_benchmark_path = config.pickle_benchmark
+    benchmark_data = pd.read_pickle(pickle_benchmark_path)
+    benchmark_subjects = benchmark_data.columns.tolist()
 
     # Gets train_val subjects from csv file
     train_val_subjects = pd.read_csv(config.train_val_csv_file, names = ['ID']).T
@@ -205,9 +210,15 @@ def create_sets(config, mode='training'):
     train_val_subjects = list(map(str, train_val_subjects))
 
     # Determines test dataframe
-    test_subjects = list(set(all_subjects).difference(train_val_subjects))
-    len_test = len(test_subjects)
-    test_data = all_data[all_data.columns.intersection(test_subjects)]
+    test_subjects = list(set(normal_subjects).difference(train_val_subjects))
+
+    normal_test_subjects = test_subjects[:round(len(test_subjects)/2)]
+    normal_test_data = \
+        normal_data[normal_data.columns.intersection(normal_test_subjects)]
+    benchmark_test_subjects = test_subjects[round(len(test_subjects)/2)+1:]
+    benchmark_test_data = \
+        benchmark_data[benchmark_data.columns.intersection(benchmark_test_subjects)]
+    test_data = pd.concat([normal_test_data, benchmark_test_data], ignore_index=True)
 
     # Cuts train_val set to requested number
     if config.nb_subjects == _ALL_SUBJECTS:
@@ -220,7 +231,13 @@ def create_sets(config, mode='training'):
     log.info(f"length of train/val dataframe: {len_train_val}")
 
     # Determines train/val dataframe
-    train_val_data = all_data[all_data.columns.intersection(train_val_subjects)]
+    normal_train_val_subjects = train_val_subjects[:round(len(train_val_subjects)/2)]
+    normal_train_val_data = \
+        normal_data[normal_data.columns.intersection(normal_train_val_subjects)]
+    benchmark_train_val_subjects = train_val_subjects[round(len(train_val_subjects)/2)+1:]
+    benchmark_train_val_data = \
+        benchmark_data[benchmark_data.columns.intersection(benchmark_train_val_subjects)]
+    train_val_data = pd.concat([normal_train_val_data, benchmark_train_val_data], ignore_index=True)
 
     # Creates a tensor object from the test and train/val DataFrame
     # (through a conversion into a numpy array)

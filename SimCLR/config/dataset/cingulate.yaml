@@ -1,4 +1,5 @@
 # @package _global_
-pickle_file: /neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/Rskeleton.pkl
+pickle_normal: /neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/Rskeleton.pkl
+pickle_benchmark: /neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/benchmark_skeleton_right.pkl
 train_val_csv_file: /neurospin/dico/data/deep_folding/current/train.csv
 nb_subjects: -1

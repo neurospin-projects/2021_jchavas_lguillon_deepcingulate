@@ -16,4 +16,4 @@ nb_epochs_per_saving: 1
 nb_steps_per_flush_logs: 8
 seed: 42
 start_epoch: 0
-checkpoint_path: ../../cingulate_epoch300_angle15_patch_8_30_30/logs/default/version_0/checkpoints/epoch=299-step=14399.ckpt
+checkpoint_path: 
