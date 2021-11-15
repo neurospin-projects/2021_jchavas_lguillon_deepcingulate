@@ -33,7 +33,6 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license version 2 and that you accept its terms.
 
-import PIL
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,8 +40,7 @@ import torch
 import matplotlib.markers as mmarkers
 from sklearn.manifold import TSNE
 import io
-from torchvision.transforms import ToTensor
-from torchvision.transforms import Resize
+from .utils import buffer_to_image
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +85,6 @@ def compute_tsne(loader, model, num_outputs):
     X = compute_embeddings_skeletons(loader, model, num_outputs)
     tsne = TSNE(n_components=2, perplexity=5, init='pca', random_state=50)
     X_tsne = tsne.fit_transform(X.detach().numpy())
-
     return X_tsne
 
 
@@ -111,67 +108,7 @@ def plot_tsne(X_tsne, buffer, labels=None):
     mscatter(X_tsne[:, 0], X_tsne[:, 1], c=c, m=m, s=8, ax=ax)
 
     if buffer:
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        plt.close('all')
-        image = PIL.Image.open(buf)
-        image = ToTensor()(image).unsqueeze(0)[0] 
-        return image
+        return buffer_to_image(buffer = io.BytesIO())
     else:
         plt.show()
-        
-def plot_img(img, buffer):
-    """Plots one 2D slice of one of the 3D images of the batch
-
-    Args:
-        img: batch of images of size [N_batch, 1, size_X, size_Y, size_Z]
-        buffer (boolean): True -> returns PNG image buffer
-                          False -> plots the figure
-    """
-    plt.imshow(img[0, 0, img.shape[2]//2, :, :])
-
-    if buffer:
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        plt.close('all')
-        image = PIL.Image.open(buf)
-        image = ToTensor()(image).unsqueeze(0)[0] 
-        return image
-    else:
-        plt.show()
-
-def prime_factors(n):
-    i = 2
-    factors = []
-    while i * i <= n:
-        if n % i:
-            i += 1
-        else:
-            n //= i
-            factors.append(i)
-    if n > 1:
-        factors.append(n)
-    return factors
-
-def plot_output(img, buffer):
-    
-    arr = (img[0,:]).detach().numpy()
-    # Reshapes the array into a 2D array
-    primes = prime_factors(arr.size)
-    row_size = np.prod(primes[:len(primes)//2])
-    arr = arr.reshape(row_size, -1)
-    
-    plt.imshow(arr)
-    
-    if buffer:
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        plt.close('all')
-        image = PIL.Image.open(buf)
-        image = ToTensor()(image).unsqueeze(0)[0] 
-        return image
-    else:
-        plt.show()
+       
