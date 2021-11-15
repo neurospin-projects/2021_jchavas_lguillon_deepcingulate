@@ -11,9 +11,11 @@ from vae import *
 import datasets
 #from ray_tune import test_benchmarks
 from deep_folding.utils.pytorchtools import EarlyStopping
+from sklearn.model_selection import train_test_split
 
 
 def train_vae(config, root_dir=None):
+    torch.manual_seed(0)
     vae = VAE((1, 12, 48, 48), config["n"], depth=3)
     device = "cpu"
     if torch.cuda.is_available():
@@ -23,13 +25,17 @@ def train_vae(config, root_dir=None):
     vae.to(device)
     summary(vae, (1, 12, 48, 48))
 
-    weights = [1, 7]
+    #weights = [1, 200, 27, 356]
+    #weights = [1, 20, 10, 30]
+    weights = [1,7]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
     optimizer = torch.optim.Adam(vae.parameters(), lr=config["lr"])
 
-    trainset = datasets.create_train_set()
+    trainset, labels = datasets.create_train_set()
     print(len(trainset))
+    #train_set, val_set, _, _ = train_test_split(trainset, labels, test_size=0.33,
+    #                                    random_state=42)
     train_set, val_set = torch.utils.data.random_split(trainset,
                             [round(0.8*len(trainset)), round(0.2*len(trainset))])
 
@@ -45,7 +51,7 @@ def train_vae(config, root_dir=None):
                 shuffle=True)
     print('size of train loader: ', len(trainloader)*64, 'size of val loader: ',
           len(valloader)*8)
-    nb_epoch = 400
+    nb_epoch = 500
     early_stopping = EarlyStopping(patience=12, verbose=True, root_dir=root_dir)
 
     list_loss_train, list_loss_val = [], []
@@ -60,8 +66,8 @@ def train_vae(config, root_dir=None):
 
             # forward + backward + optimize
             inputs = Variable(inputs).to(device, dtype=torch.float32)
-            output, mean, logvar, z = vae(inputs)
             target = torch.squeeze(inputs, dim=1).long()
+            output, mean, logvar, z = vae(inputs)
             recon_loss, kl, loss = vae_loss(output, target, mean,
                                     logvar, criterion,
                                     kl_weight=config["kl"])
@@ -139,8 +145,8 @@ def train_vae(config, root_dir=None):
 
 
 def main():
-    root_dir = '/neurospin/dico/lguillon/midl_22/'
-    config = {"lr": 5e-4, "kl": 2, "n": 125}
+    root_dir = '/neurospin/dico/lguillon/midl_22/run_2/'
+    config = {"lr": 1e-4, "kl": 8, "n": 75}
 
     train_vae(config, root_dir=root_dir)
 
