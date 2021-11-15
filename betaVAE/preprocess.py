@@ -16,7 +16,12 @@ class NormalizeSkeleton(object):
 
     def __call__(self, arr):
         arr[arr > 0] = 1 # sulci
-
+        """arr[arr==40]=30
+        arr[arr==70]=80
+        arr[arr==30]=1
+        arr[arr==60]=2
+        arr[arr==80]=3"""
+        #print(np.unique(arr))
         return arr
 
 
