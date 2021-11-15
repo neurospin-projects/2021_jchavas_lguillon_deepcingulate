@@ -39,8 +39,89 @@ from collections import namedtuple
 import numpy as np
 import torch
 from scipy.ndimage import rotate
-import skimage
 from sklearn.preprocessing import OneHotEncoder
+
+def rotate_list(l):
+    "Rotates list by -1"
+    return l[1:] + l[:1]
+
+class PaddingTensor(object):
+    """A class to pad a tensor"""
+    def __init__(self, shape, nb_channels=1, fill_value=0):
+        """ Initialize the instance.
+        Parameters
+        ----------
+        shape: list of int
+            the desired shape.
+        nb_channels: int, default 1
+            the number of channels.
+        fill_value: int or list of int, default 0
+            the value used to fill the array, if a list is given, use the
+            specified value on each channel.
+        """
+        self.shape = rotate_list(shape)
+        self.nb_channels = nb_channels
+        self.fill_value = fill_value
+        if self.nb_channels > 1 and not isinstance(self.fill_value, list):
+            self.fill_value = [self.fill_value] * self.nb_channels
+        elif isinstance(self.fill_value, list):
+            assert len(self.fill_value) == self.nb_channels()
+
+    def __call__(self, tensor):
+        """ Fill a tensor to fit the desired shape.
+        Parameters
+        ----------
+        tensor: torch.tensor
+            an input tensor.
+        Returns
+        -------
+        fill_tensor: torch.tensor
+            the fill_value padded tensor.
+        """
+        if len(tensor.shape) - len(self.shape) == 1:
+            data = []
+            for _tensor, _fill_value in zip(tensor, self.fill_value):
+                data.append(self._apply_padding(_tensor, _fill_value))
+            return torch.from_numpy(np.asarray(data))
+        elif len(tensor.shape) - len(self.shape) == 0:
+            return self._apply_padding(tensor, self.fill_value)
+        else:
+            raise ValueError("Wrong input shape specified!")
+
+    def _apply_padding(self, tensor, fill_value):
+        """ See Padding.__call__().
+        """
+        arr = tensor.numpy()
+        orig_shape = arr.shape
+        padding = []
+        for orig_i, final_i in zip(orig_shape, self.shape):
+            shape_i = final_i - orig_i
+            half_shape_i = shape_i // 2
+            if shape_i % 2 == 0:
+                padding.append((half_shape_i, half_shape_i))
+            else:
+                padding.append((half_shape_i, half_shape_i + 1))
+        for cnt in range(len(arr.shape) - len(padding)):
+            padding.append((0, 0))
+
+        fill_arr = np.pad(arr, padding, mode="constant",
+                          constant_values=fill_value)
+
+        # fill_arr = np.reshape(fill_arr, (1,) + fill_arr.shape[:-1])
+
+        return torch.from_numpy(fill_arr) 
+
+class EndTensor(object):
+    """Puts all internal and external values to background value 0
+    """
+
+    def __init__(self):
+        None
+        
+    def __call__(self, tensor):
+        arr = tensor.numpy()
+        arr = np.reshape(arr, (1,) + arr.shape[:-1])
+        return torch.from_numpy(arr)  
 
 class SimplifyTensor(object):
     """Puts all internal and external values to background value 0
@@ -76,7 +157,7 @@ class RotateTensor(object):
 
     def __call__(self, tensor):
 
-        arr = tensor.numpy()[0]
+        arr = tensor.numpy()[:,:,:,0]
         arr_shape = arr.shape
         flat_im = np.reshape(arr, (-1, 1))
         im_encoder = OneHotEncoder(sparse=False, categories='auto')
@@ -106,7 +187,7 @@ class MixTensor(object):
     """Apply a cutout on the images and puts only bottom value inside the cutout
     cf. Improved Regularization of Convolutional Neural Networks with Cutout,
     arXiv, 2017
-    We assume that the cube to be cut is inside the image.
+    We assume that the rectangle to be cut is inside the image.
     """
 
     def __init__(self, from_skeleton=True, patch_size=None, random_size=False,
@@ -123,7 +204,7 @@ class MixTensor(object):
             inplace (bool, optional): [description]. Defaults to False.
             localization ([type], optional): [description]. Defaults to None.
         """
-        self.patch_size = patch_size
+        self.patch_size = rotate_list(patch_size)
         self.random_size = random_size
         self.inplace = inplace
         self.localization = localization

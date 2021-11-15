@@ -6,8 +6,9 @@ from sklearn.neighbors import NearestNeighbors
 import anatomist.api as anatomist
 from soma import aims
 import colorado as cld
-from deep_folding.anatomist_tools.utils import remove_hull
+from SimCLR.postprocessing.visualize_anatomist import plot_bucket_anatomist
 import PIL
+import torch
 
 """Inspired from lightly https://docs.lightly.ai/tutorials/package/tutorial_simclr_clothing.html
 """
@@ -58,25 +59,8 @@ def plot_knn_examples(embeddings, filenames, dataset, n_neighbors=3, num_example
             plt.axis('off')
     plt.show()
     
-def create_array_without_hull(view):
-    im2 = view[0,:].numpy()
-    for k in range(len(im2)):
-        for i in range(len(im2[k])):
-            for j in range(len(im2[k][i])):
-                vox = im2[k][i][j]
-                if vox>1 and vox != 11: # On est sur un sillon
-                        if im2[k-1][i][j]==11 or im2[k+1][i][j]==11 or im2[k][i-1][j]==11 or im2[k][i+1][j]==11 or im2[k][i][j-1]==11 or im2[k][i][j+1]==11:
-                            im2[k][i][j]=11
-    im2[im2==0] = 10
-    im2[im2!=10] =0
-    return im2
-
-def create_mesh_from_array(im):
-    input_vol = aims.Volume(im)
-    input_mesh = cld.aims_tools.volume_to_mesh(input_vol)
-    return input_mesh
-    
-def plot_knn_meshes(embeddings, filenames, dataset, n_neighbors=3, num_examples=6):
+   
+def plot_knn_buckets(embeddings, filenames, dataset, n_neighbors=3, num_examples=6):
     """Plots multiple rows of random images with their nearest neighbors
     """
     # lets look at the nearest neighbors for some samples
@@ -92,16 +76,11 @@ def plot_knn_meshes(embeddings, filenames, dataset, n_neighbors=3, num_examples=
     view = get_input(dataset, filenames, 0)
 
     # Converts from tensor to aims volume
-    arr = view[0,:].numpy()
-    arr = np.reshape(arr, arr.shape + (1,)).astype(np.int16)
-    vol = aims.Volume(arr)
+    arr = view.numpy()
+    arr = np.reshape(arr, (1,1) + arr.shape).astype(np.int16)
+    plot_bucket_anatomist(torch.from_numpy(arr),
+                            buffer=False)
 
-    # Creates mesh without hull
-    _, _, mesh = remove_hull.create_one_mesh(vol)
-    
-    aw = a.createWindow('3D')
-    am = a.toAObject(mesh)
-    a.addObjects(am, aw)
     # block = a.AWindowsBlock(a, n_neighbors)
     
 

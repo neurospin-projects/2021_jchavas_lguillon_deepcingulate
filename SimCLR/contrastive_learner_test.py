@@ -40,11 +40,8 @@ import torch
 import numpy as np
 from SimCLR.losses import NTXenLoss
 from SimCLR.models.densenet import DenseNet
-from sklearn.manifold import TSNE
 
-from SimCLR.postprocessing.visualize_tsne import plot_tsne
-from SimCLR.postprocessing.visualize_tsne import plot_img
-from SimCLR.postprocessing.visualize_tsne import plot_output
+from SimCLR.postprocessing.visualize_anatomist import plot_bucket_anatomist
 
 from toolz.itertoolz import last, first
 
@@ -92,12 +89,12 @@ class ContrastiveLearnerTest(DenseNet):
             self.sample_j.append(inputs[:, 1, :].cpu())
 
     def training_epoch_end(self, outputs):
-        image_input_i = plot_img(self.sample_i[-1], buffer=True)
+        image_input_i = plot_bucket_anatomist(self.sample_i, buffer=True)
         self.logger.experiment.add_image(
-            'input_i train', image_input_i, self.current_epoch)
-        image_input_j = plot_img(self.sample_j[-1], buffer=True)
+            'input_test_i', image_input_i, self.current_epoch)
+        image_input_j = plot_bucket_anatomist(self.sample_j, buffer=True)
         self.logger.experiment.add_image(
-            'input_j train', image_input_j, self.current_epoch)
+            'input_test_j', image_input_j, self.current_epoch)
 
     def validation_step(self, val_batch, batch_idx):
         (inputs, filenames) = val_batch
@@ -107,10 +104,10 @@ class ContrastiveLearnerTest(DenseNet):
             self.val_sample_j.append(inputs[:, 1, :].cpu())
 
     def validation_epoch_end(self, outputs):
-        image_input_i = plot_img(self.val_sample_i[-1], buffer=True)
+        image_input_i = plot_bucket_anatomist(self.val_sample_i, buffer=True)
         self.logger.experiment.add_image(
-            'input_i val', image_input_i, self.current_epoch)
-        image_input_j = plot_img(self.val_sample_j[-1], buffer=True)
+            'input_test_i val', image_input_i, self.current_epoch)
+        image_input_j = plot_bucket_anatomist(self.val_sample_j, buffer=True)
         self.logger.experiment.add_image(
-            'input_j val', image_input_j, self.current_epoch)
+            'input_test_j val', image_input_j, self.current_epoch)
 

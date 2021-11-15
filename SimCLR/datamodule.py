@@ -74,3 +74,12 @@ class DataModule(pl.LightningDataModule):
                                 shuffle=False
                                 )
         return loader_val
+
+    def test_dataloader(self):
+        loader_test = DataLoader(self.dataset_test,
+                                batch_size=self.config.batch_size,
+                                pin_memory=self.config.pin_mem,
+                                num_workers=self.config.num_cpu_workers,
+                                shuffle=False
+                                )
+        return loader_test

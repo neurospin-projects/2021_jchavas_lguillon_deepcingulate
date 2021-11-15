@@ -41,8 +41,8 @@ import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
-from deep_folding.preprocessing.pynet_transforms import PaddingTensor
-from SimCLR.augmentations import OnlyBottomTensor
+from SimCLR.augmentations import PaddingTensor
+from SimCLR.augmentations import EndTensor
 from SimCLR.augmentations import RotateTensor
 from SimCLR.augmentations import SimplifyTensor
 from SimCLR.augmentations import MixTensor
@@ -79,7 +79,6 @@ class ContrastiveDataset():
         """Returns the two views corresponding to index idx
 
         The two views are generated on the fly.
-        The first view is the reference view (only padding is applied)
 
         Returns:
             tuple of (views, subject ID)
@@ -89,15 +88,22 @@ class ContrastiveDataset():
         sample = self.data_tensor[idx]
         filename = self.filenames[idx]
 
+        # self.transform1 = transforms.Compose([
+        #     SimplifyTensor(),
+        #     PaddingTensor(self.config.input_size,
+        #                   fill_value=self.config.fill_value),
+        #     MixTensor(from_skeleton=True, patch_size=self.config.patch_size),
+        #     RotateTensor(max_angle=self.config.max_angle)
+        # ])
+
         self.transform1 = transforms.Compose([
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            MixTensor(from_skeleton=True, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle)
+            EndTensor()
         ])
         
-        # - padding to 80x80x80 by default, see config file
+        # - padding
         # - + random rotation
         self.transform2 = transforms.Compose([
             SimplifyTensor(),
@@ -143,7 +149,7 @@ class ContrastiveDataset_Visualization():
         """Returns the two views corresponding to index idx
 
         The two views are generated on the fly.
-        The first view is the reference view (only padding is applied)
+        The second view is the reference view (only padding is applied)
 
         Returns:
             tuple of (views, subject ID)
@@ -154,15 +160,19 @@ class ContrastiveDataset_Visualization():
         filename = self.filenames[idx]
 
         self.transform1 = transforms.Compose([
+            SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            MixTensor(from_skeleton=True, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle)
+            EndTensor()
         ])
         
+        # - padding
+        # - + random rotation
         self.transform2 = transforms.Compose([
+            SimplifyTensor(),
             PaddingTensor(self.config.input_size,
-                          fill_value=self.config.fill_value)
+                          fill_value=self.config.fill_value),
+            EndTensor()
         ])
 
         view1 = self.transform1(sample)
@@ -184,46 +194,72 @@ def create_sets(config, mode='training'):
         train_set, val_set, test_set (tuple)
     """
 
+    # Loads crops from all subjects
     pickle_file_path = config.pickle_file
     all_data = pd.read_pickle(pickle_file_path)
+    all_subjects = all_data.columns.tolist()
 
-    len_data = (
-        len(all_data.columns)
-        if config.nb_subjects == _ALL_SUBJECTS
-        else min(config.nb_subjects, len(all_data.columns)))
+    # Gets train_val subjects from csv file
+    train_val_subjects = pd.read_csv(config.train_val_csv_file, names = ['ID']).T
+    train_val_subjects = train_val_subjects.values[0].tolist()
+    train_val_subjects = list(map(str, train_val_subjects))
 
-    filenames = (
-        list(all_data.columns)
-        if config.nb_subjects == _ALL_SUBJECTS
-        else list(all_data.columns)[:len_data])  # files names = subject IDs
+    # Determines test dataframe
+    test_subjects = list(set(all_subjects).difference(train_val_subjects))
+    len_test = len(test_subjects)
+    test_data = all_data[all_data.columns.intersection(test_subjects)]
 
-    log.info("length of dataframe: {}".format(len_data))
-    log.info("column names : {}".format(filenames))
-
-    # Creates a tensor object from the DataFrame
-    # (through a conversion into a numpy array)
-    tensor_data = torch.from_numpy(np.array([all_data.loc[0].values[k]
-                                             for k in range(len_data)]))
-    log.info("Tensor data shape: {}".format(tensor_data.shape))
-
-    # Creates the dataset from this tensor by doing some preprocessing
-    if mode == 'visualization':
-        hcp_dataset = ContrastiveDataset_Visualization(filenames=filenames,
-                                     data_tensor=tensor_data,
-                                     config=config)
+    # Cuts train_val set to requested number
+    if config.nb_subjects == _ALL_SUBJECTS:
+        len_train_val = len(train_val_subjects)
     else:
-        hcp_dataset = ContrastiveDataset(filenames=filenames,
-                                     data_tensor=tensor_data,
-                                     config=config)
-    log.info("Length of complete data set: {}".format(len(hcp_dataset)))
+        len_train_val = min(config.nb_subjects,
+                            len(train_val_subjects))
+        train_val_subjects = train_val_subjects[:len_train_val]
 
-    # Split training set into train, val and test set
+    log.info(f"length of train/val dataframe: {len_train_val}")
+
+    # Determines train/val dataframe
+    train_val_data = all_data[all_data.columns.intersection(train_val_subjects)]
+
+    # Creates a tensor object from the test and train/val DataFrame
+    # (through a conversion into a numpy array)
+    test_tensor = torch.from_numpy(np.array([test_data.loc[0].values[k]
+                                             for k in range(len_test)]))
+    log.info(f"Tensor test data shape: {test_tensor.shape}")
+    train_val_tensor = torch.from_numpy(np.array([train_val_data.loc[0].values[k]
+                                             for k in range(len_train_val)]))
+    log.info(f"Tensor train/val data shape: {train_val_tensor.shape}")
+
+    # Creates the dataset from these tensors by doing some preprocessing
+    if mode == 'visualization':
+        test_dataset = ContrastiveDataset_Visualization(
+                            filenames=test_subjects,
+                            data_tensor=test_tensor,
+                            config=config)
+        train_val_dataset = ContrastiveDataset_Visualization(
+                            filenames=train_val_subjects,
+                            data_tensor=train_val_tensor,
+                            config=config)
+    else:
+        test_dataset = ContrastiveDataset(
+                            filenames=test_subjects,
+                            data_tensor=test_tensor,
+                            config=config)
+        train_val_dataset = ContrastiveDataset(
+                            filenames=train_val_subjects,
+                            data_tensor=train_val_tensor,
+                            config=config)
+    log.info(f"Length of test data set: {len(test_dataset)}")
+    log.info(f"Length of complete train/val data set: {len(train_val_dataset)}")
+
+    # Split training/val set into train, val set
     partition = config.partition
 
-    log.info([round(i * (len(hcp_dataset))) for i in partition])
+    log.info([round(i * (len(train_val_dataset))) for i in partition])
     np.random.seed(1)
-    train_set, val_set, test_set = torch.utils.data.random_split(
-        hcp_dataset,
-        [round(i * (len(hcp_dataset))) for i in partition])
+    train_set, val_set = torch.utils.data.random_split(
+        train_val_dataset,
+        [round(i * (len(train_val_dataset))) for i in partition])
 
-    return train_set, val_set, test_set
+    return train_set, val_set, test_dataset

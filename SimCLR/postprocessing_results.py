@@ -47,7 +47,6 @@ from SimCLR.contrastive_learner import ContrastiveLearner
 from SimCLR.contrastive_learner_test import ContrastiveLearnerTest
 from SimCLR.datamodule import DataModule
 from SimCLR.utils import process_config
-from SimCLR.postprocessing.visualize_tsne import plot_output
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.tensorboard import SummaryWriter
@@ -56,10 +55,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import ImageGrid
 from sklearn.cluster import KMeans
+from sklearn.cluster import DBSCAN
+from sklearn.cluster import OPTICS
 
 from SimCLR.postprocessing.visualize_tsne import plot_tsne
 from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_examples
-from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_meshes
+from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_buckets
 
 from soma import aims
 
@@ -128,32 +129,42 @@ def postprocessing_results(config):
         logger=tb_logger,
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
         resume_from_checkpoint=config.checkpoint_path)
-    dataset_val = data_module.dataset_val
-    trainer.validate(model, data_module.val_dataloader()) 
-    embeddings, filenames = model.compute_representations(data_module.val_dataloader())
+    trainer.test(model) 
+    embeddings, filenames = model.compute_representations(data_module.test_dataloader())
     
     data_module_visu = DataModule(config)
     data_module_visu.setup(stage='validate', mode='visualization')
     
-    plot_knn_meshes(embeddings=embeddings,
-                    filenames=filenames,
-                    dataset=data_module_visu.dataset_val,
-                    n_neighbors=6,
-                    num_examples=3
-                    )
+    # plot_knn_buckets(embeddings=embeddings,
+    #                 filenames=filenames,
+    #                 dataset=data_module_visu.dataset_test,
+    #                 n_neighbors=6,
+    #                 num_examples=3
+    #                 )
     
-    plot_knn_examples(embeddings=embeddings,
-                      filenames=filenames,
-                      dataset=data_module_visu.dataset_val,
-                      n_neighbors=6,
-                      num_examples=3
-                      )
+    # log.info("knn meshes done")
+
+    # plot_knn_examples(embeddings=embeddings,
+    #                   filenames=filenames,
+    #                   dataset=data_module_visu.dataset_test,
+    #                   n_neighbors=6,
+    #                   num_examples=3
+    #                   )
     
+    # log.info("knn examples done")
+
     # Makes Kmeans and represents it on a t-SNE plot
-    X_tsne = model.compute_tsne(data_module.val_dataloader(), "representation")
-    n_clusters = 5
-    kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
-    plot_tsne(X_tsne=X_tsne, buffer=False, labels=kmeans.labels_)
+    X_tsne = model.compute_tsne(data_module_visu.test_dataloader(), "representation")
+    n_clusters = 4
+
+    nb_first_views = (embeddings.shape[0])//2
+    index = np.arange(nb_first_views)*2
+    embeddings = embeddings[index, :]
+
+    # clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
+    # clustering = DBSCAN(eps=2).fit(embeddings)
+    clustering = OPTICS().fit(embeddings)
+    plot_tsne(X_tsne=X_tsne, buffer=False, labels=clustering.labels_)
 
 
 if __name__ == "__main__":

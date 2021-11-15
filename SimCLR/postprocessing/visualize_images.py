@@ -33,82 +33,76 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license version 2 and that you accept its terms.
 
+import PIL
 import logging
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-import torch
-import matplotlib.markers as mmarkers
-from sklearn.manifold import TSNE
 import io
 from .utils import buffer_to_image
+from .utils import prime_factors
 
 logger = logging.getLogger(__name__)
 
-
-def mscatter(x, y, ax=None, m=None, **kw):
-    if not ax:
-        ax = plt.gca()
-    sc = ax.scatter(x, y, **kw)
-    if (m is not None) and (len(m) == len(x)):
-        paths = []
-        for marker in m:
-            if isinstance(marker, mmarkers.MarkerStyle):
-                marker_obj = marker
-            else:
-                marker_obj = mmarkers.MarkerStyle(marker)
-            path = marker_obj.get_path().transformed(
-                marker_obj.get_transform())
-            paths.append(path)
-        sc.set_paths(paths)
-    return sc
-
-
-def compute_embeddings_skeletons(loader, model, num_outputs):
-    X = torch.zeros([0, num_outputs]).cpu()
-    with torch.no_grad():
-        for (inputs, filenames) in loader:
-            # First views of the whole batch
-            inputs = inputs.cuda()
-            model = model.cuda()
-            X_i = model.forward(inputs[:, 0, :])
-            # Second views of the whole batch
-            X_j = model.forward(inputs[:, 1, :])
-            # First views and second views are put side by side
-            X_reordered = torch.cat([X_i, X_j], dim=-1)
-            X_reordered = X_reordered.view(-1, X_i.shape[-1])
-            X = torch.cat((X, X_reordered.cpu()), dim=0)
-            del inputs
-    return X
-
-
-def compute_tsne(loader, model, num_outputs):
-    X = compute_embeddings_skeletons(loader, model, num_outputs)
-    tsne = TSNE(n_components=2, perplexity=5, init='pca', random_state=50)
-    X_tsne = tsne.fit_transform(X.detach().numpy())
-    return X_tsne
-
-
-def plot_tsne(X_tsne, buffer, labels=None):
-    """Generates TSNE plot either in a PNG image buffer or as a plot
+def plot_img(img, buffer):
+    """Plots one 2D slice of one of the 3D images of the batch
 
     Args:
-        X_tsne: TSNE N_features rows x 2 columns
+        img: batch of images of size [N_batch, 1, size_X, size_Y, size_Z]
         buffer (boolean): True -> returns PNG image buffer
                           False -> plots the figure
     """
-    fig, ax = plt.subplots(1)
-    logger.info(X_tsne.shape)
-    nb_points = X_tsne.shape[0]
-    m = np.repeat(["o"], nb_points)
-    if labels is None:
-        c = np.tile(np.array(["b", "r"]), nb_points // 2)
-    else:
-        c = labels
-        
-    mscatter(X_tsne[:, 0], X_tsne[:, 1], c=c, m=m, s=8, ax=ax)
+    plt.imshow(img[0, 0, img.shape[2]//2, :, :])
 
     if buffer:
         return buffer_to_image(buffer = io.BytesIO())
     else:
         plt.show()
-       
+
+
+def plot_bucket(img, buffer):
+    """Plots as 3D buckets the first 3D image of the batch
+
+    Args:
+        img: batch of images of size [size_batch, 1, size_X, size_Y, size_Z]
+        buffer (boolean): True -> returns PNG image buffer
+                          False -> plots the figure
+    """
+
+    arr = img[0, 0, :, :, :]
+    logger.info(np.unique(arr, return_counts=True))
+    logger.info(img.shape)
+    logger.info(arr.shape)
+    bucket = np.argwhere(arr)
+    bucket_t = (bucket).T
+    x = bucket_t[:,0]
+    y = bucket_t[:,1]
+    z = bucket_t[:,2]
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.set_xlim3d(0, 12)
+    ax.set_ylim3d(0, 40)
+    ax.set_zlim3d(0, 40)
+    ax.scatter(x,y,z)
+
+    if buffer:
+        return buffer_to_image(buffer = io.BytesIO())
+    else:
+        plt.show()
+
+
+def plot_output(img, buffer):
+    
+    arr = (img[0,:]).detach().numpy()
+    # Reshapes the array into a 2D array
+    primes = prime_factors(arr.size)
+    row_size = np.prod(primes[:len(primes)//2])
+    arr = arr.reshape(row_size, -1)
+    
+    plt.imshow(arr)
+    
+    if buffer:
+        return buffer_to_image(buffer = io.BytesIO())
+    else:
+        plt.show()

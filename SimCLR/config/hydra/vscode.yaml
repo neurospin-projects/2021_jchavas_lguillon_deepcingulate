@@ -2,3 +2,5 @@
 hydra:
   run:
     dir: ../../Output/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
+checkpoint_dir: ../../Output/cingulate_epoch300_angle15_patch_8_30_30/logs/default/version_0/checkpoints/epoch=299-step=14399.ckpt
