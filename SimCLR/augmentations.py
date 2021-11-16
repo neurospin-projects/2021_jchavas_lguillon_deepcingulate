@@ -187,7 +187,87 @@ class RotateTensor(object):
         return torch.from_numpy(arr_rot)
 
 
-class MixTensor(object):
+
+class PartialCutOutTensor_Roll(object):
+    """Apply a rolling cutout on the images and puts only bottom value inside the cutout
+    cf. Improved Regularization of Convolutional Neural Networks with Cutout,
+    arXiv, 2017
+    We assume that the rectangle to be cut is inside the image.
+    """
+
+    def __init__(self, from_skeleton=True, patch_size=None, random_size=False,
+                 localization=None):
+        """[summary]
+
+        If from_skeleton==True, takes skeleton image, cuts it out and fills with bottom_only image
+        If from_skeleton==False, takes bottom_only image, cuts it out and fills with skeleton image
+
+        Args:
+            from_skeleton (bool, optional): [description]. Defaults to True.
+            patch_size (either int or list of int): [description]. Defaults to None.
+            random_size (bool, optional): [description]. Defaults to False.
+            inplace (bool, optional): [description]. Defaults to False.
+            localization ([type], optional): [description]. Defaults to None.
+        """
+        self.patch_size = rotate_list(patch_size)
+        self.random_size = random_size
+        self.localization = localization
+        self.from_skeleton = from_skeleton
+
+    def __call__(self, tensor):
+
+        arr = tensor.numpy()
+        img_shape = np.array(arr.shape)
+        if isinstance(self.patch_size, int):
+            size = [self.patch_size for _ in range(len(img_shape))]
+        else:
+            size = np.copy(self.patch_size)
+        assert len(size) == len(img_shape), "Incorrect patch dimension."
+        start_cutout = []
+        for ndim in range(len(img_shape)):
+            if size[ndim] > img_shape[ndim] or size[ndim] < 0:
+                size[ndim] = img_shape[ndim]
+            if self.random_size:
+                size[ndim] = np.random.randint(0, size[ndim])
+            if self.localization is not None:
+                delta_before = max(
+                    self.localization[ndim] - size[ndim] // 2, 0)
+            else:
+                np.random.seed()
+                delta_before = np.random.randint(0, img_shape[ndim])
+            start_cutout.append(delta_before)
+        
+        # Creates rolling mask cutout
+        mask_roll = np.zeros(img_shape)
+
+        indexes=[]
+        for ndim in range(len(img_shape)):
+            indexes.append(slice(0, int(size[ndim])))
+        mask_roll[tuple(indexes)] = 1
+
+        for ndim in range(len(img_shape)):
+            mask_roll = np.roll(mask_roll, start_cutout[ndim], axis=ndim)
+
+        # Determines part of the array inside and outside the cutout
+        arr_inside = arr * mask_roll
+        arr_outside = arr * (1-mask_roll)
+
+        # If self.from_skeleton == True:
+        # This keeps the whole skeleton outside the cutout
+        # and keeps only bottom value inside the cutout
+        if self.from_skeleton:
+            arr_inside = arr_inside * (arr_inside==30)
+        
+        # If self.from_skeleton == False:
+        # This keeps only bottom value outside the cutout
+        # and keeps the whole skeleton inside the cutout
+        else:
+            arr_outside = arr_outside * (arr_outside==30)
+
+        return torch.from_numpy(arr_inside + arr_outside)
+
+
+class PartialCutOutTensor(object):
     """Apply a cutout on the images and puts only bottom value inside the cutout
     cf. Improved Regularization of Convolutional Neural Networks with Cutout,
     arXiv, 2017
