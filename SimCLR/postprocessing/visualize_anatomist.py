@@ -42,7 +42,7 @@ from .utils import buffer_to_image
 logger = logging.getLogger(__name__)
 
 from soma import aims
-import anatomist.api as anatomist
+import anatomist.headless as anatomist
 from deep_folding.anatomist_tools.utils import remove_hull
 
 a = anatomist.Anatomist()
