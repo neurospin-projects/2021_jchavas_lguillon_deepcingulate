@@ -221,10 +221,12 @@ class ContrastiveLearner(DenseNet):
         tsne = TSNE(n_components=2, perplexity=5, init='pca', random_state=50)
 
         # Extract one row out of 2 (to just get first view)
-        nb_first_views = (X.shape[0])//2
-        index = np.arange(nb_first_views)*2
-        Y = X.detach().numpy()
-        Y = Y[index, :]
+        # nb_first_views = (X.shape[0])//2
+        # index = np.arange(nb_first_views)*2
+        # Y = X.detach().numpy()
+        # Y = Y[index, :]
+
+        Y= X.detach().numpy()
 
         # Makes the t-SNE fit
         X_tsne = tsne.fit_transform(Y)

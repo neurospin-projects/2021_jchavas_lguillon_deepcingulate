@@ -93,4 +93,3 @@ def train(config):
 
 if __name__ == "__main__":
     train()
-    Qt.QApplication.instance().exec_()
