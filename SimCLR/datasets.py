@@ -45,7 +45,8 @@ from SimCLR.augmentations import PaddingTensor
 from SimCLR.augmentations import EndTensor
 from SimCLR.augmentations import RotateTensor
 from SimCLR.augmentations import SimplifyTensor
-from SimCLR.augmentations import MixTensor
+from SimCLR.augmentations import PartialCutOutTensor
+from SimCLR.augmentations import PartialCutOutTensor_Roll
 
 _ALL_SUBJECTS = -1
 
@@ -102,7 +103,7 @@ class ContrastiveDataset():
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            MixTensor(from_skeleton=True, patch_size=self.config.patch_size),
+            PartialCutOutTensor_Roll(from_skeleton=True, patch_size=self.config.patch_size),
             RotateTensor(max_angle=self.config.max_angle)
         ])
         
@@ -112,7 +113,7 @@ class ContrastiveDataset():
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            MixTensor(from_skeleton=False, patch_size=self.config.patch_size),
+            PartialCutOutTensor_Roll(from_skeleton=False, patch_size=self.config.patch_size),
             RotateTensor(max_angle=self.config.max_angle)
         ])
 

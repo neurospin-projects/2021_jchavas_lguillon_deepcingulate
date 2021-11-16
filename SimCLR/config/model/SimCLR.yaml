@@ -13,7 +13,7 @@ weight_decay: 5e-5
 max_epochs: 300
 drop_rate: 0.0
 nb_epochs_per_saving: 1
-nb_steps_per_flush_logs: 8
+nb_steps_per_flush_logs: 1
 seed: 42
 start_epoch: 0
 checkpoint_path: 

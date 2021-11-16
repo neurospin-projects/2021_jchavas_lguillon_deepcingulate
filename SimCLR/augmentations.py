@@ -238,7 +238,7 @@ class PartialCutOutTensor_Roll(object):
             start_cutout.append(delta_before)
         
         # Creates rolling mask cutout
-        mask_roll = np.zeros(img_shape)
+        mask_roll = np.zeros(img_shape).astype('float32')
 
         indexes=[]
         for ndim in range(len(img_shape)):
