@@ -137,11 +137,12 @@ def main(num_samples, max_num_epochs, gpus_per_trial):
     data_dir = '/neurospin/dico/lguillon/midl_22/experiments/'
     checkpoint_dir = '/neurospin/dico/lguillon/midl_22/ray_results/'
     trainset = datasets.create_train_set()
+    print(len(trainset))
 
     config = {
               "lr": tune.choice([1e-4]),
-              "kl": tune.choice([2, 3, 4, 5, 6, 10]),
-              "n": tune.choice([25, 40, 50, 75, 100])
+              "kl": tune.choice([5, 6, 10]),
+              "n": tune.choice([25, 50, 75, 100])
     }
     scheduler = ASHAScheduler(
         metric="loss",
