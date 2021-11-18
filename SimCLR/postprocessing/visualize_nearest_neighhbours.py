@@ -68,12 +68,8 @@ def plot_knn_buckets(embeddings, filenames, dataset, n_neighbors=3, num_examples
     nbrs = NearestNeighbors(n_neighbors=n_neighbors).fit(embeddings)
     distances, indices = nbrs.kneighbors(embeddings)
 
-    # get 5 random samples
-    samples_idx = np.random.choice(
-        len(indices), size=num_examples, replace=False)
-
-    a = anatomist.Anatomist()
-    view = get_input(dataset, filenames, 0)
+    # get 5 random # -*- coding: utf-8 -*-
+# /usr/bin/env python3.6 + brainvisa compliant envt(dataset, filenames, 0)
 
     # Converts from tensor to aims volume
     arr = view.numpy()
