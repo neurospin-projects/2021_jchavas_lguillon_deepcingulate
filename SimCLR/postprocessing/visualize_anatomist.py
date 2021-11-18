@@ -25,6 +25,10 @@
 # that may mean  that it is complicated to manipulate,  and  that  also
 # requirements in conditions enabling the security of their systems and/or
 # data to be ensured and,  more generally, to use and operate it in the
+import logging
+import io
+from numpy import int16
+import matplotlib.pyplot as plt
 
 from .utils import buffer_to_image
 
