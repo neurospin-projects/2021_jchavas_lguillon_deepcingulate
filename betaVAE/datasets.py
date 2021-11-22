@@ -49,8 +49,8 @@ from preprocess import *
 #from .pynet_transforms import *
 
 subject_dir = "/neurospin/dico/data/deep_folding/current/"
-data_dir_1 = "/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/"
-data_dir_2 = "/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/"
+data_dir = "/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/centered_combined/hcp/"
+
 
 class SkeletonDataset():
     """Custom dataset for skeleton images that includes image file paths.
@@ -83,7 +83,7 @@ class SkeletonDataset():
 
         fill_value = 0
         self.transform = transforms.Compose([NormalizeSkeleton(),
-                         Padding([1, 12, 48, 48], fill_value=fill_value)
+                         Padding([1, 20, 40, 40], fill_value=fill_value)
                          ])
         sample = self.transform(sample)
         #print(np.unique(sample))
@@ -128,29 +128,21 @@ def create_train_set(side='R'):
                             usecols=[0], names=['subjects'])
     train_list['subjects'] = train_list['subjects'].astype('str')
 
-    tmp = pd.read_pickle(os.path.join(data_dir_1, f"{side}skeleton.pkl")).T
+    tmp = pd.read_pickle(os.path.join(data_dir, f"{side}skeleton.pkl")).T
     #tmp = tmp.rename(columns={0:'subjects'})
     tmp.index.astype('str')
 
-    tmp2 = pd.read_pickle(os.path.join(data_dir_2, f"benchmark_skeleton_right.pkl")).T
-    tmp2.index.astype('str')
+    tmp = tmp.merge(train_list, left_on = tmp.index, right_on='subjects', how='right')
 
-    tmp = tmp.merge(train_list[:math.floor(len(train_list)/2)], left_on = tmp.index, right_on='subjects', how='right')
-    tmp2 = tmp2.merge(train_list[math.ceil(len(train_list)/2):], left_on = tmp2.index, right_on='subjects', how='right')
     filenames = list(train_list['subjects'])
 
-    train_set = SkeletonDataset(dataframe=pd.concat([tmp, tmp2], ignore_index=True), filenames=filenames)
+    train_set = SkeletonDataset(dataframe=tmp, filenames=filenames)
 
-    labels = ['paracingular' for k in range(math.floor(len(train_list)/2))] \
-             + ['SC' for k in range(math.ceil(len(train_list)/2))]
 
-    print(labels)
-    corres_labels = pd.DataFrame(data={"subjects": filenames, "roi": labels})
-    corres_labels.to_csv("/neurospin/dico/lguillon/midl_22/subjects_roi.csv", sep=',',index=False)
     # Data Augmentation application
     #train_set = AugDatasetTransformer(train_set)
 
-    return train_set, labels
+    return train_set
 
 
 #create_train_set(data_dir)
