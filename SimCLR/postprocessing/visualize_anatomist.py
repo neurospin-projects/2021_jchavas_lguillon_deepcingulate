@@ -38,9 +38,16 @@ from soma import aims
 import anatomist.headless as anatomist
 from deep_folding.anatomist_tools.utils import remove_hull
 
-a = anatomist.Anatomist()
-win = a.createWindow('3D')
-win.setHasCursor(0)
+win = None
+a = None
+
+def setup():
+    global win
+    global a
+    a = anatomist.Anatomist()
+    win = a.createWindow('3D')
+    win.setHasCursor(0)
+
 
 def plot_bucket_anatomist(img, buffer):
     """Plots as 3D buckets the first 3D image of the batch

@@ -132,14 +132,14 @@ class ContrastiveDataset_Visualization():
     Applies different transformations to data depending on the type of input.
     """
 
-    def __init__(self, data_tensor, filenames, config):
+    def __init__(self, dataframe, filenames, config):
         """
         Args:
             data_tensor (tensor): contains MRIs as numpy arrays
             filenames (list of strings): list of subjects' IDs
             config (Omegaconf dict): contains configuration information
         """
-        self.data_tensor = data_tensor.type(torch.float32)
+        self.df = dataframe
         self.transform = True
         self.nb_train = len(filenames)
         log.info(self.nb_train)
@@ -160,7 +160,8 @@ class ContrastiveDataset_Visualization():
         """
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        sample = self.data_tensor[idx]
+        sample = self.df.loc[0].values[idx].astype('float32')
+        sample = torch.from_numpy(sample)
         filename = self.filenames[idx]
 
         self.transform1 = transforms.Compose([
@@ -255,11 +256,11 @@ def create_sets(config, mode='training'):
     if mode == 'visualization':
         test_dataset = ContrastiveDataset_Visualization(
                             filenames=test_subjects,
-                            data_tensor=test_data,
+                            dataframe=test_data,
                             config=config)
         train_val_dataset = ContrastiveDataset_Visualization(
                             filenames=train_val_subjects,
-                            data_tensor=train_val_data,
+                            dataframe=train_val_data,
                             config=config)
     else:
         test_dataset = ContrastiveDataset(

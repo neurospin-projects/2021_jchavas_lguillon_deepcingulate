@@ -36,11 +36,11 @@ import logging
 import os
 
 import omegaconf
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 log = logging.getLogger(__name__)
 
 
-def process_config(config) -> omegaconf.dictconfig.DictConfig:
+def process_config(config) -> DictConfig:
     """Does whatever operations on the config file
     """
 

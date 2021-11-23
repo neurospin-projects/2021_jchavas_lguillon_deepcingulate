@@ -41,7 +41,9 @@
 import logging
 
 import hydra
+import os
 import torch
+from omegaconf import DictConfig, OmegaConf
 import pytorch_lightning as pl
 from SimCLR.contrastive_learner import ContrastiveLearner
 from SimCLR.contrastive_learner_test import ContrastiveLearnerTest
@@ -53,16 +55,13 @@ from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.axes_grid1 import ImageGrid
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
-from sklearn.cluster import OPTICS
+# from sklearn.cluster import OPTICS
 
 from SimCLR.postprocessing.visualize_tsne import plot_tsne
 from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_examples
 from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_buckets
-
-from soma import aims
 
 tb_logger = pl_loggers.TensorBoardLogger('logs')
 writer = SummaryWriter()
@@ -78,7 +77,9 @@ We call:
 
       
 @hydra.main(config_name='config', config_path="config")
-def postprocessing_results(config):
+def postprocessing_results(config: DictConfig) -> None:
+    print(OmegaConf.to_yaml(config))
+    print("toto")
     config = process_config(config)
 
     # Sets seed for pseudo-random number generators
@@ -87,32 +88,6 @@ def postprocessing_results(config):
 
     data_module = DataModule(config)
     data_module.setup(stage='validate')
-
-    # Show the views of the first batch
-    # fig = plt.figure(figsize=(4., 8.), dpi=400)
-    # grid = ImageGrid(fig, 111,
-    #                 nrows_ncols = (config.batch_size//4, 8),
-    #                 axes_pad=0.2,)
-    # (inputs, filenames) = next(iter(data_module.val_dataloader()))
-    # input_i = inputs[:, 0, :]
-    # input_j = inputs[:, 1, :]
-    # print("input_i : {}".format(np.unique(input_i)))
-    # print("input_j : {}".format(np.unique(input_j)))
-    # images = []
-    # np.save("input_i.npy", input_i[0, 0, :, :, :])
-    # np.save("input_j.npy", input_j[0, 0, :, :, :])
-    # vol_i = aims.Volume(1, 80, 80, 80, dtype=np.int32)
-    # np.asarray(vol_i)[:] = input_i[0, :, :, :, :]
-    # aims.write(vol_i, 'input_i.nii')
-    # print(np.unique(input_i[0, :, :, :, :]))
-    # for i in range(config.batch_size):
-    #     images.append(input_i[i, 0, input_i.shape[2]//2, :, :])
-    #     images.append(input_j[i, 0, input_i.shape[2]//2, :, :])
-    # for ax, im in zip(grid, images):
-    #     ax.imshow(im)
-    #     ax.axis('off')
-    #     ax.set_title(np.unique(im)[1], fontsize=4)
-    # plt.show()
     
     # Show the views of the first skeleton after each epoch
     model = ContrastiveLearner(config,
@@ -130,7 +105,7 @@ def postprocessing_results(config):
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
         resume_from_checkpoint=config.checkpoint_path)
     trainer.test(model) 
-    embeddings, filenames = model.compute_representations(data_module.test_dataloader())
+    embeddings, _ = model.compute_representations(data_module.test_dataloader())
     
     data_module_visu = DataModule(config)
     data_module_visu.setup(stage='validate', mode='visualization')
@@ -155,16 +130,16 @@ def postprocessing_results(config):
 
     # Makes Kmeans and represents it on a t-SNE plot
     X_tsne = model.compute_tsne(data_module_visu.test_dataloader(), "representation")
-    n_clusters = 4
+    n_clusters = 2
 
     nb_first_views = (embeddings.shape[0])//2
     index = np.arange(nb_first_views)*2
     embeddings = embeddings[index, :]
 
-    # clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
+    clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
     # clustering = DBSCAN(eps=2).fit(embeddings)
-    clustering = OPTICS().fit(embeddings)
-    plot_tsne(X_tsne=X_tsne, buffer=False, labels=clustering.labels_)
+    # clustering = OPTICS().fit(embeddings)
+    plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=clustering.labels_)
 
 
 if __name__ == "__main__":
