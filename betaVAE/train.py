@@ -16,23 +16,23 @@ from sklearn.model_selection import train_test_split
 
 def train_vae(config, root_dir=None):
     torch.manual_seed(0)
-    vae = VAE((1, 12, 48, 48), config["n"], depth=3)
+    vae = VAE((1, 20, 40, 40), config["n"], depth=3)
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda:0"
         if torch.cuda.device_count() > 1:
             vae = nn.DataParallel(vae)
     vae.to(device)
-    summary(vae, (1, 12, 48, 48))
+    summary(vae, (1, 20, 40, 40))
 
     #weights = [1, 200, 27, 356]
     #weights = [1, 20, 10, 30]
-    weights = [1,7]
+    weights = [1, 7]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
     optimizer = torch.optim.Adam(vae.parameters(), lr=config["lr"])
 
-    trainset, labels = datasets.create_train_set()
+    trainset = datasets.create_train_set()
     print(len(trainset))
     #train_set, val_set, _, _ = train_test_split(trainset, labels, test_size=0.33,
     #                                    random_state=42)
@@ -146,7 +146,7 @@ def train_vae(config, root_dir=None):
 
 def main():
     root_dir = '/neurospin/dico/lguillon/midl_22/run_2/'
-    config = {"lr": 1e-4, "kl": 8, "n": 75}
+    config = {"lr": 1e-4, "kl": 20, "n": 75}
 
     train_vae(config, root_dir=root_dir)
 
