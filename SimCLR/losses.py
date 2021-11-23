@@ -89,3 +89,90 @@ class NTXenLoss(nn.Module):
 
     def __str__(self):
         return "{}(temp={})".format(type(self).__name__, self.temperature)
+
+
+class NTXenLoss_Clustering(nn.Module):
+    """
+    Normalized Temperature Cross-Entropy Loss for Constrastive Learning
+    Refer for instance to:
+    Ting Chen, Simon Kornblith, Mohammad Norouzi, Geoffrey Hinton
+    A Simple Framework for Contrastive Learning of Visual Representations,
+    arXiv 2020
+    """
+
+    def __init__(self, temperature_numerator=0.1, temperature_denominator=0.3, return_logits=False):
+        super().__init__()
+        self.temperature_numerator = temperature_numerator
+        self.temperatire_denumerator = temperature_denominator
+        self.INF = 1e8
+        self.return_logits = return_logits
+
+    def forward(self, z_i, z_j):
+        N = len(z_i)
+        z_i = func.normalize(z_i, p=2, dim=-1)  # dim [N, D]
+        z_j = func.normalize(z_j, p=2, dim=-1)  # dim [N, D]
+
+
+        #################################################
+        # Computes numerator
+        #################################################
+
+        # dim [N, N] => Upper triangle contains incorrect pairs
+        sim_zii = (z_i @ z_i.T) / self.temperature_numerator
+
+        # dim [N, N] => Upper triangle contains incorrect pairs
+        sim_zjj = (z_j @ z_j.T) / self.temperature_numerator
+
+        # dim [N, N] => the diag contains the correct pairs (i,j)
+        # (x transforms via T_i and T_j)
+        sim_zij = (z_i @ z_j.T) / self.temperature_numerator
+
+        # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
+        sim_zii = sim_zii - self.INF * torch.eye(N, device=z_i.device)
+        sim_zjj = sim_zjj - self.INF * torch.eye(N, device=z_i.device)
+
+        correct_pairs = torch.arange(N, device=z_i.device).long()
+        loss_i_numerator = func.cross_entropy(torch.cat([sim_zij, sim_zii], dim=1),
+                                    correct_pairs)
+        loss_j_numerator = func.cross_entropy(torch.cat([sim_zij.T, sim_zjj], dim=1),
+                                    correct_pairs)
+
+        #################################################
+        # Computes denumerator
+        #################################################
+
+        # dim [N, N] => Upper triangle contains incorrect pairs
+        sim_zii = (z_i @ z_i.T) / self.temperature_denumerator
+
+        # dim [N, N] => Upper triangle contains incorrect pairs
+        sim_zjj = (z_j @ z_j.T) / self.temperature_denumerator
+
+        # dim [N, N] => the diag contains the correct pairs (i,j)
+        # (x transforms via T_i and T_j)
+        sim_zij = (z_i @ z_j.T) / self.temperature_numerator
+
+        # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
+        sim_zii = sim_zii - self.INF * torch.eye(N, device=z_i.device)
+        sim_zjj = sim_zjj - self.INF * torch.eye(N, device=z_i.device)
+
+        correct_pairs = torch.arange(N, device=z_i.device).long()
+        loss_i_denumerator = func.cross_entropy(torch.cat([sim_zij, sim_zii], dim=1),
+                                    correct_pairs)
+        loss_j_denumerator = func.cross_entropy(torch.cat([sim_zij.T, sim_zjj], dim=1),
+                                    correct_pairs)
+
+        #################################################
+        # Computes total loss
+        #################################################
+
+        loss = (loss_i_denumerator + loss_j_denumerator) / (loss_i_numerator + loss_j_numerator)
+
+        if self.return_logits:
+            return loss, sim_zij, correct_pairs
+
+        return loss
+
+    def __str__(self):
+        return "{}(temp_num={}; temp_denum={})".format(type(self).__name__, 
+                                                       self.temperature_numerator,
+                                                       self.temperature_denumerator)
