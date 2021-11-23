@@ -204,8 +204,9 @@ def create_sets(config, mode='training'):
     normal_subjects = normal_data.columns.tolist()
 
     # Loads benchmarks (crops from another region) from all subjects
-    pickle_benchmark_path = config.pickle_benchmark
-    benchmark_data = pd.read_pickle(pickle_benchmark_path)
+    if config.pickle_benchmark:
+        pickle_benchmark_path = config.pickle_benchmark
+        benchmark_data = pd.read_pickle(pickle_benchmark_path)
 
     # Gets train_val subjects from csv file
     train_val_subjects = pd.read_csv(config.train_val_csv_file, names = ['ID']).T
@@ -216,13 +217,17 @@ def create_sets(config, mode='training'):
     test_subjects = list(set(normal_subjects).difference(train_val_subjects))
     len_test = len(test_subjects)
 
-    normal_test_subjects = test_subjects[:round(len_test/2)]
-    normal_test_data = \
-        normal_data[normal_data.columns.intersection(normal_test_subjects)]
-    benchmark_test_subjects = test_subjects[round(len_test/2):]
-    benchmark_test_data = \
-        benchmark_data[benchmark_data.columns.intersection(benchmark_test_subjects)]
-    test_data = pd.concat([normal_test_data, benchmark_test_data], axis=1, ignore_index=True)
+    if config.pickle_benchmark:
+        normal_test_subjects = test_subjects[:round(len_test/2)]
+        normal_test_data = \
+            normal_data[normal_data.columns.intersection(normal_test_subjects)]
+        benchmark_test_subjects = test_subjects[round(len_test/2):]
+        benchmark_test_data = \
+            benchmark_data[benchmark_data.columns.intersection(benchmark_test_subjects)]
+
+        test_data = pd.concat([normal_test_data, benchmark_test_data], axis=1, ignore_index=True)
+    else:
+        test_data = normal_data[normal_data.columns.intersection(test_subjects)]
 
     # Cuts train_val set to requested number
     if config.nb_subjects == _ALL_SUBJECTS:
@@ -235,23 +240,26 @@ def create_sets(config, mode='training'):
     log.info(f"length of train/val dataframe: {len_train_val}")
 
     # Determines train/val dataframe
-    normal_train_val_subjects = train_val_subjects[:round(len(train_val_subjects)/2)]
-    normal_train_val_data = \
-        normal_data[normal_data.columns.intersection(normal_train_val_subjects)]
-    benchmark_train_val_subjects = train_val_subjects[round(len(train_val_subjects)/2):]
-    benchmark_train_val_data = \
-        benchmark_data[benchmark_data.columns.intersection(benchmark_train_val_subjects)]
-    train_val_data = pd.concat([normal_train_val_data, benchmark_train_val_data], axis=1, ignore_index=True)
+    if config.pickle_benchmark:
+        normal_train_val_subjects = train_val_subjects[:round(len(train_val_subjects)/2)]
+        normal_train_val_data = \
+            normal_data[normal_data.columns.intersection(normal_train_val_subjects)]
+        benchmark_train_val_subjects = train_val_subjects[round(len(train_val_subjects)/2):]
+        benchmark_train_val_data = \
+            benchmark_data[benchmark_data.columns.intersection(benchmark_train_val_subjects)]
+        train_val_data = pd.concat([normal_train_val_data, benchmark_train_val_data], axis=1, ignore_index=True)
+    else:
+        train_val_data = normal_data[normal_data.columns.intersection(train_val_subjects)]
 
     # Creates the dataset from these tensors by doing some preprocessing
     if mode == 'visualization':
         test_dataset = ContrastiveDataset_Visualization(
                             filenames=test_subjects,
-                            data_tensor=test_tensor,
+                            data_tensor=test_data,
                             config=config)
         train_val_dataset = ContrastiveDataset_Visualization(
                             filenames=train_val_subjects,
-                            data_tensor=train_val_tensor,
+                            data_tensor=train_val_data,
                             config=config)
     else:
         test_dataset = ContrastiveDataset(

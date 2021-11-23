@@ -6,11 +6,11 @@ patch_size: [1, 12, 24, 24]
 max_angle: 10
 partition: [0.8, 0.2]
 num_cpu_workers: 48
-temperature: 0.1
+temperature: 0.01
 sigma: 5
 lr: 1e-4
 weight_decay: 5e-5
-max_epochs: 100
+max_epochs: 300
 drop_rate: 0.0
 nb_epochs_per_saving: 1
 nb_steps_per_flush_logs: 1
