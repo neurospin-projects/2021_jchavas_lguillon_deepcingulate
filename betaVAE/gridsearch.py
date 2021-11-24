@@ -6,6 +6,7 @@ import pandas as pd
 from operator import itemgetter
 from functools import partial
 from torchsummary import summary
+import itertools
 
 from vae import *
 import datasets
@@ -16,6 +17,7 @@ from sklearn.model_selection import train_test_split
 
 def train_vae(config, root_dir=None):
     torch.manual_seed(0)
+    lr = 2e-4
     vae = VAE((1, 20, 40, 40), config["n"], depth=3)
     device = "cpu"
     if torch.cuda.is_available():
@@ -30,7 +32,7 @@ def train_vae(config, root_dir=None):
     weights = [1, 1]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
-    optimizer = torch.optim.Adam(vae.parameters(), lr=config["lr"])
+    optimizer = torch.optim.Adam(vae.parameters(), lr=lr)
 
     trainset = datasets.create_train_set()
     print(len(trainset))
@@ -145,10 +147,21 @@ def train_vae(config, root_dir=None):
 
 
 def main():
-    config = {"lr": 2e-4, "kl": 1, "n": 20}
-    root_dir = f"/neurospin/dico/lguillon/midl_22/gridsearch/n_{config['n']}_kl_{config['kl']}/"
+    config = {"kl": [1, 2, 5, 8, 10],
+              "n": [20, 50, 75, 700, 150]
+    }
+    #config = {"lr": 2e-4, "kl": 1, "n": 20}
+    for kl, n in list(itertools.product(config["kl"], config["n"])):
+        cur_config = {"kl": kl, "n": n}
+        root_dir = f"/neurospin/dico/lguillon/midl_22/gridsearch/n_{n}_kl_{kl}/"
 
-    train_vae(config, root_dir=root_dir)
+        try:
+            os.mkdir(root_dir)
+        except FileExistsError:
+            print("Directory " , root_dir ,  " already exists")
+            pass
+        print(cur_config)
+        train_vae(cur_config, root_dir=root_dir)
 
 
 if __name__ == '__main__':
