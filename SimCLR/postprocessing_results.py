@@ -45,8 +45,7 @@ import os
 import torch
 from omegaconf import DictConfig, OmegaConf
 import pytorch_lightning as pl
-from SimCLR.contrastive_learner import ContrastiveLearner
-from SimCLR.contrastive_learner_test import ContrastiveLearner_Visualization
+from SimCLR.contrastive_learner_visualization import ContrastiveLearner_Visualization
 from SimCLR.datamodule import DataModule
 from SimCLR.utils import process_config
 from pytorch_lightning import loggers as pl_loggers
@@ -74,7 +73,6 @@ We call:
 - output, the space after the projection head.
   The elements are called output vectors
 """
-
       
 @hydra.main(config_name='config', config_path="config")
 def postprocessing_results(config: DictConfig) -> None:
@@ -85,8 +83,15 @@ def postprocessing_results(config: DictConfig) -> None:
     # in: pytorch, numpy, python.random
     # seed_everything(config.seed)
 
+    # Trick
+    # Makes a dummy plot before invoking anatomist in headless mode
+    plot = plt.figure()
+    plt.ion()
+    plt.show()
+    plt.pause(0.001)
+
     data_module = DataModule(config)
-    data_module.setup(stage='validate')
+    data_module.setup(stage='validate', mode='visualization')
     
     # Show the views of the first skeleton after each epoch
     model = ContrastiveLearner_Visualization(config,
@@ -104,10 +109,7 @@ def postprocessing_results(config: DictConfig) -> None:
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
         resume_from_checkpoint=config.checkpoint_path)
     trainer.test(model) 
-    embeddings, _ = model.compute_representations(data_module.test_dataloader())
-    
-    data_module_visu = DataModule(config)
-    data_module_visu.setup(stage='validate', mode='visualization')
+    embeddings, _ = model.compute_representations(data_module.train_dataloader())
     
     # plot_knn_buckets(embeddings=embeddings,
     #                 filenames=filenames,
@@ -128,7 +130,7 @@ def postprocessing_results(config: DictConfig) -> None:
     # log.info("knn examples done")
 
     # Makes Kmeans and represents it on a t-SNE plot
-    # X_tsne = model.compute_tsne(data_module_visu.test_dataloader(), "representation")
+    X_tsne = model.compute_tsne(data_module.train_dataloader(), "representation")
     n_clusters = 2
 
     nb_first_views = (embeddings.shape[0])//2
@@ -138,8 +140,9 @@ def postprocessing_results(config: DictConfig) -> None:
     clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
     # clustering = DBSCAN(eps=2).fit(embeddings)
     # clustering = OPTICS().fit(embeddings)
-    # plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=clustering.labels_)
+    plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=clustering.labels_)
 
+    input("Press [enter] to continue.")
 
 if __name__ == "__main__":
     postprocessing_results()
