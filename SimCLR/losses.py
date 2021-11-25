@@ -100,10 +100,9 @@ class NTXenLoss_Clustering(nn.Module):
     arXiv 2020
     """
 
-    def __init__(self, temperature_numerator=0.1, temperature_denominator=0.3, return_logits=False):
+    def __init__(self, temperature=0.1, return_logits=False):
         super().__init__()
-        self.temperature_numerator = temperature_numerator
-        self.temperatire_denumerator = temperature_denominator
+        self.temperature = temperature
         self.INF = 1e8
         self.return_logits = return_logits
 
@@ -112,67 +111,30 @@ class NTXenLoss_Clustering(nn.Module):
         z_i = func.normalize(z_i, p=2, dim=-1)  # dim [N, D]
         z_j = func.normalize(z_j, p=2, dim=-1)  # dim [N, D]
 
-
-        #################################################
-        # Computes numerator
-        #################################################
+        # dim [N, N] => Upper triangle contains incorrect pairs
+        sim_zii = (z_i @ z_i.T) / self.temperature
 
         # dim [N, N] => Upper triangle contains incorrect pairs
-        sim_zii = (z_i @ z_i.T) / self.temperature_numerator
-
-        # dim [N, N] => Upper triangle contains incorrect pairs
-        sim_zjj = (z_j @ z_j.T) / self.temperature_numerator
+        sim_zjj = (z_j @ z_j.T) / self.temperature
 
         # dim [N, N] => the diag contains the correct pairs (i,j)
         # (x transforms via T_i and T_j)
-        sim_zij = (z_i @ z_j.T) / self.temperature_numerator
+        sim_zij = (z_i @ z_j.T) / self.temperature
 
         # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
         sim_zii = sim_zii - self.INF * torch.eye(N, device=z_i.device)
         sim_zjj = sim_zjj - self.INF * torch.eye(N, device=z_i.device)
 
         correct_pairs = torch.arange(N, device=z_i.device).long()
-        loss_i_numerator = func.cross_entropy(torch.cat([sim_zij, sim_zii], dim=1),
+        loss_i = func.cross_entropy(torch.cat([sim_zij, sim_zii], dim=1),
                                     correct_pairs)
-        loss_j_numerator = func.cross_entropy(torch.cat([sim_zij.T, sim_zjj], dim=1),
+        loss_j = func.cross_entropy(torch.cat([sim_zij.T, sim_zjj], dim=1),
                                     correct_pairs)
-
-        #################################################
-        # Computes denumerator
-        #################################################
-
-        # dim [N, N] => Upper triangle contains incorrect pairs
-        sim_zii = (z_i @ z_i.T) / self.temperature_denumerator
-
-        # dim [N, N] => Upper triangle contains incorrect pairs
-        sim_zjj = (z_j @ z_j.T) / self.temperature_denumerator
-
-        # dim [N, N] => the diag contains the correct pairs (i,j)
-        # (x transforms via T_i and T_j)
-        sim_zij = (z_i @ z_j.T) / self.temperature_numerator
-
-        # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
-        sim_zii = sim_zii - self.INF * torch.eye(N, device=z_i.device)
-        sim_zjj = sim_zjj - self.INF * torch.eye(N, device=z_i.device)
-
-        correct_pairs = torch.arange(N, device=z_i.device).long()
-        loss_i_denumerator = func.cross_entropy(torch.cat([sim_zij, sim_zii], dim=1),
-                                    correct_pairs)
-        loss_j_denumerator = func.cross_entropy(torch.cat([sim_zij.T, sim_zjj], dim=1),
-                                    correct_pairs)
-
-        #################################################
-        # Computes total loss
-        #################################################
-
-        loss = (loss_i_denumerator + loss_j_denumerator) / (loss_i_numerator + loss_j_numerator)
 
         if self.return_logits:
-            return loss, sim_zij, correct_pairs
+            return (loss_i + loss_j), sim_zij, correct_pairs
 
-        return loss
+        return (loss_i + loss_j)
 
     def __str__(self):
-        return "{}(temp_num={}; temp_denum={})".format(type(self).__name__, 
-                                                       self.temperature_numerator,
-                                                       self.temperature_denumerator)
+        return "{}(temp={})".format(type(self).__name__, self.temperature)

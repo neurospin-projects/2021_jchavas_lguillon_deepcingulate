@@ -47,6 +47,7 @@ from omegaconf import DictConfig, OmegaConf
 import pytorch_lightning as pl
 from SimCLR.contrastive_learner_visualization import ContrastiveLearner_Visualization
 from SimCLR.datamodule import DataModule
+from SimCLR.datamodule import DataModule_Visualization
 from SimCLR.utils import process_config
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.utilities.seed import seed_everything
@@ -90,8 +91,8 @@ def postprocessing_results(config: DictConfig) -> None:
     plt.show()
     plt.pause(0.001)
 
-    data_module = DataModule(config)
-    data_module.setup(stage='validate', mode='visualization')
+    data_module = DataModule_Visualization(config)
+    data_module.setup(stage='validate')
     
     # Show the views of the first skeleton after each epoch
     model = ContrastiveLearner_Visualization(config,
@@ -111,31 +112,30 @@ def postprocessing_results(config: DictConfig) -> None:
     trainer.test(model) 
     embeddings, _ = model.compute_representations(data_module.train_dataloader())
     
+    # Gets coordinates of first views of the embeddings
+    nb_first_views = (embeddings.shape[0])//2
+    index = np.arange(nb_first_views)*2
+    embeddings = embeddings[index, :]
+
     # plot_knn_buckets(embeddings=embeddings,
-    #                 filenames=filenames,
-    #                 dataset=data_module_visu.dataset_test,
+    #                 dataset=data_module.dataset_train,
     #                 n_neighbors=6,
     #                 num_examples=3
     #                 )
     
     # log.info("knn meshes done")
 
-    # plot_knn_examples(embeddings=embeddings,
-    #                   filenames=filenames,
-    #                   dataset=data_module_visu.dataset_test,
-    #                   n_neighbors=6,
-    #                   num_examples=3
-    #                   )
+    plot_knn_examples(embeddings=embeddings,
+                      dataset=data_module.dataset_train,
+                      n_neighbors=6,
+                      num_examples=3
+                      )
     
     # log.info("knn examples done")
 
     # Makes Kmeans and represents it on a t-SNE plot
     X_tsne = model.compute_tsne(data_module.train_dataloader(), "representation")
     n_clusters = 2
-
-    nb_first_views = (embeddings.shape[0])//2
-    index = np.arange(nb_first_views)*2
-    embeddings = embeddings[index, :]
 
     clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
     # clustering = DBSCAN(eps=2).fit(embeddings)

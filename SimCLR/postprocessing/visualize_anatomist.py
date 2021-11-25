@@ -68,9 +68,9 @@ class Visu_Anatomist:
         view_quaternion = [0.4, 0.4, 0.5, 0.5]
         win.camera(view_quaternion=view_quaternion)
         win.imshow(show=False)
-        win.removeObjects(bucket_a)
-
+        
         if buffer:
+            win.removeObjects(bucket_a)
             return buffer_to_image(buffer = io.BytesIO())
         else:
             plt.show()

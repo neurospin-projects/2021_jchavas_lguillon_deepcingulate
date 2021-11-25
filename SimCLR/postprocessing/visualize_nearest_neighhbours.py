@@ -26,12 +26,13 @@ def get_input(dataset, filenames, idx):
     """gets input numbered idx"""
     
     (views, filename) = dataset[idx//2]
-    if filename != filenames[idx]:
-        log.error("filenames dont match: {} != {}".format(filename, filenames[idx]))
+    if filenames:
+        if filename != filenames[idx]:
+            log.error("filenames dont match: {} != {}".format(filename, filenames[idx]))
     return views[idx%2]
 
 
-def plot_knn_examples(embeddings, filenames, dataset, n_neighbors=3, num_examples=6):
+def plot_knn_examples(embeddings, dataset, filenames=None, n_neighbors=3, num_examples=6):
     """Plots multiple rows of random images with their nearest neighbors
     """
     # lets look at the nearest neighbors for some samples
@@ -58,10 +59,13 @@ def plot_knn_examples(embeddings, filenames, dataset, n_neighbors=3, num_example
             ax.set_title(f'd={distances[idx][plot_x_offset]:.3f}')
             # let's disable the axis
             plt.axis('off')
+            
+    plt.ion()
     plt.show()
+    plt.pause(0.001)
     
    
-def plot_knn_buckets(embeddings, filenames, dataset, n_neighbors=3, num_examples=6):
+def plot_knn_buckets(embeddings, dataset, filenames=None, n_neighbors=3, num_examples=6):
     """Plots multiple rows of random images with their nearest neighbors
     """
     # lets look at the nearest neighbors for some samples
@@ -75,9 +79,10 @@ def plot_knn_buckets(embeddings, filenames, dataset, n_neighbors=3, num_examples
 
     # Converts from tensor to aims volume
     arr = view.numpy()
-    arr = np.reshape(arr, (1,1) + arr.shape).astype(np.int16)
+    arr = np.reshape(arr, (1,) + arr.shape).astype(np.int16)
     if visu_anatomist == None:
         visu_anatomist = Visu_Anatomist()
+    log.info(f"shape = {arr.shape}")
     visu_anatomist.plot_bucket(torch.from_numpy(arr),
                                buffer=False)
 
@@ -97,7 +102,7 @@ def plot_knn_buckets(embeddings, filenames, dataset, n_neighbors=3, num_examples
     #         # set the title to the distance of the neighbor
     #         ax.set_title(f'd={distances[idx][plot_x_offset]:.3f}')
     #         # let's disable the axis
-    #         plt.axis('off')
+    #         plt.axis('off')            win.imshow(show=False)
 
 if __name__ == "__main__":
     n_samples = 20

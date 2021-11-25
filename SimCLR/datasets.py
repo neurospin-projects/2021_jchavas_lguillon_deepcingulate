@@ -283,4 +283,4 @@ def create_sets(config, mode='training'):
         train_val_dataset,
         [round(i * (len(train_val_dataset))) for i in partition])
 
-    return train_set, val_set, test_dataset
+    return train_set, val_set, test_dataset, train_val_dataset
