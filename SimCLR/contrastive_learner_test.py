@@ -41,7 +41,7 @@ import numpy as np
 from SimCLR.losses import NTXenLoss
 from SimCLR.models.densenet import DenseNet
 
-from SimCLR.postprocessing.visualize_anatomist import plot_bucket_anatomist
+from SimCLR.postprocessing.visualize_anatomist import Visu_Anatomist
 
 from toolz.itertoolz import last, first
 
@@ -62,6 +62,7 @@ class ContrastiveLearnerTest(DenseNet):
         self.val_sample_i = []
         self.val_sample_j = []
         self.recording_done = False
+        self.visu_anatomist = Visu_Anatomist()
          
     def custom_histogram_adder(self):
 
@@ -89,10 +90,10 @@ class ContrastiveLearnerTest(DenseNet):
             self.sample_j.append(inputs[:, 1, :].cpu())
 
     def training_epoch_end(self, outputs):
-        image_input_i = plot_bucket_anatomist(self.sample_i, buffer=True)
+        image_input_i = self.visu_anatomist.plot_bucket(self.sample_i, buffer=True)
         self.logger.experiment.add_image(
             'input_test_i', image_input_i, self.current_epoch)
-        image_input_j = plot_bucket_anatomist(self.sample_j, buffer=True)
+        image_input_j = self.visu_anatomist.plot_bucket(self.sample_j, buffer=True)
         self.logger.experiment.add_image(
             'input_test_j', image_input_j, self.current_epoch)
 
@@ -104,10 +105,10 @@ class ContrastiveLearnerTest(DenseNet):
             self.val_sample_j.append(inputs[:, 1, :].cpu())
 
     def validation_epoch_end(self, outputs):
-        image_input_i = plot_bucket_anatomist(self.val_sample_i, buffer=True)
+        image_input_i = self.visu_anatomist.plot_bucket(self.val_sample_i, buffer=True)
         self.logger.experiment.add_image(
             'input_test_i val', image_input_i, self.current_epoch)
-        image_input_j = plot_bucket_anatomist(self.val_sample_j, buffer=True)
+        image_input_j = self.visu_anatomist.plot_bucket(self.val_sample_j, buffer=True)
         self.logger.experiment.add_image(
             'input_test_j val', image_input_j, self.current_epoch)
 

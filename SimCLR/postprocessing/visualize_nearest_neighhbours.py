@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 import anatomist.api as anatomist
 from soma import aims
 import colorado as cld
-from SimCLR.postprocessing.visualize_anatomist import plot_bucket_anatomist
+from SimCLR.postprocessing.visualize_anatomist import Visu_Anatomist
 import PIL
 import torch
 
@@ -14,6 +14,7 @@ import torch
 """
 
 log = logging.getLogger(__name__)
+visu_anatomist = None
 
 def get_image_as_np_array(filename: str):
     """Returns an image as an numpy array
@@ -65,17 +66,20 @@ def plot_knn_buckets(embeddings, filenames, dataset, n_neighbors=3, num_examples
     """
     # lets look at the nearest neighbors for some samples
     # we use the sklearn library
+    global visu_anatomist
     nbrs = NearestNeighbors(n_neighbors=n_neighbors).fit(embeddings)
     distances, indices = nbrs.kneighbors(embeddings)
 
-    # get 5 random # -*- coding: utf-8 -*-
-# /usr/bin/env python3.6 + brainvisa compliant envt(dataset, filenames, 0)
+    # get 5 random samples
+    view = get_input(dataset, filenames, 0)
 
     # Converts from tensor to aims volume
     arr = view.numpy()
     arr = np.reshape(arr, (1,1) + arr.shape).astype(np.int16)
-    plot_bucket_anatomist(torch.from_numpy(arr),
-                            buffer=False)
+    if visu_anatomist == None:
+        visu_anatomist = Visu_Anatomist()
+    visu_anatomist.plot_bucket(torch.from_numpy(arr),
+                               buffer=False)
 
     # block = a.AWindowsBlock(a, n_neighbors)
     
