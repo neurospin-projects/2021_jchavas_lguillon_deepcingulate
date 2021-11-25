@@ -40,21 +40,19 @@ import torch
 import numpy as np
 from SimCLR.losses import NTXenLoss
 from SimCLR.models.densenet import DenseNet
+from SimCLR.contrastive_learner import ContrastiveLearner
 
 from SimCLR.postprocessing.visualize_anatomist import Visu_Anatomist
 
 from toolz.itertoolz import last, first
 
-class ContrastiveLearnerTest(DenseNet):
+class ContrastiveLearner_Visualization(ContrastiveLearner):
 
-    def __init__(self, config, mode, drop_rate, sample_data):
-        super(ContrastiveLearnerTest, self).__init__(growth_rate=config.growth_rate,
-                                                 block_config=config.block_config,
-                                                 num_init_features=config.num_init_features,
-                                                 num_representation_features=config.num_representation_features,
-                                                 num_outputs=config.num_outputs,
-                                                 mode=mode,
-                                                 drop_rate=config.drop_rate)
+    def __init__(self, config, mode, sample_data):
+        super(ContrastiveLearner_Visualization, self).__init__(config=config,
+            mode=mode,
+            sample_data=sample_data
+            )
         self.config = config
         self.sample_data = sample_data
         self.sample_i = []

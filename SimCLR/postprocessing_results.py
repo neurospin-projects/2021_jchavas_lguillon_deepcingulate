@@ -46,7 +46,7 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 import pytorch_lightning as pl
 from SimCLR.contrastive_learner import ContrastiveLearner
-from SimCLR.contrastive_learner_test import ContrastiveLearnerTest
+from SimCLR.contrastive_learner_test import ContrastiveLearner_Visualization
 from SimCLR.datamodule import DataModule
 from SimCLR.utils import process_config
 from pytorch_lightning import loggers as pl_loggers
@@ -79,7 +79,6 @@ We call:
 @hydra.main(config_name='config', config_path="config")
 def postprocessing_results(config: DictConfig) -> None:
     print(OmegaConf.to_yaml(config))
-    print("toto")
     config = process_config(config)
 
     # Sets seed for pseudo-random number generators
@@ -90,7 +89,7 @@ def postprocessing_results(config: DictConfig) -> None:
     data_module.setup(stage='validate')
     
     # Show the views of the first skeleton after each epoch
-    model = ContrastiveLearner(config,
+    model = ContrastiveLearner_Visualization(config,
                             mode="encoder",
                             sample_data=data_module)
     model = model.load_from_checkpoint(config.checkpoint_path,
@@ -129,7 +128,7 @@ def postprocessing_results(config: DictConfig) -> None:
     # log.info("knn examples done")
 
     # Makes Kmeans and represents it on a t-SNE plot
-    X_tsne = model.compute_tsne(data_module_visu.test_dataloader(), "representation")
+    # X_tsne = model.compute_tsne(data_module_visu.test_dataloader(), "representation")
     n_clusters = 2
 
     nb_first_views = (embeddings.shape[0])//2
@@ -139,7 +138,7 @@ def postprocessing_results(config: DictConfig) -> None:
     clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
     # clustering = DBSCAN(eps=2).fit(embeddings)
     # clustering = OPTICS().fit(embeddings)
-    plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=clustering.labels_)
+    # plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=clustering.labels_)
 
 
 if __name__ == "__main__":
