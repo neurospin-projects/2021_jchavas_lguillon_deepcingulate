@@ -47,6 +47,7 @@ from SimCLR.augmentations import RotateTensor
 from SimCLR.augmentations import SimplifyTensor
 from SimCLR.augmentations import PartialCutOutTensor
 from SimCLR.augmentations import PartialCutOutTensor_Roll
+from SimCLR.augmentations import CheckerboardTensor
 
 _ALL_SUBJECTS = -1
 
@@ -104,7 +105,8 @@ class ContrastiveDataset():
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
             PartialCutOutTensor_Roll(from_skeleton=True, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle)
+            RotateTensor(max_angle=self.config.max_angle),
+            CheckerboardTensor(checkerboard_size=self.config.checkerboard_size)
         ])
         
         # - padding
@@ -114,7 +116,8 @@ class ContrastiveDataset():
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
             PartialCutOutTensor_Roll(from_skeleton=False, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle)
+            RotateTensor(max_angle=self.config.max_angle),
+            CheckerboardTensor(checkerboard_size=self.config.checkerboard_size)
         ])
 
         view1 = self.transform1(sample)
@@ -213,10 +216,12 @@ def create_sets(config, mode='training'):
     train_val_subjects = pd.read_csv(config.train_val_csv_file, names = ['ID']).T
     train_val_subjects = train_val_subjects.values[0].tolist()
     train_val_subjects = list(map(str, train_val_subjects))
+    print(f"train_val_subjects = {train_val_subjects}")
 
     # Determines test dataframe
     test_subjects = list(set(normal_subjects).difference(train_val_subjects))
     len_test = len(test_subjects)
+    print(f"test_subjects = {test_subjects}")
 
     if config.pickle_benchmark:
         normal_test_subjects = test_subjects[:round(len_test/2)]

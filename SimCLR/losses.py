@@ -41,6 +41,11 @@ import torch.nn as nn
 import torch.nn.functional as func
 from sklearn.metrics.pairwise import rbf_kernel
 
+def mean_off_diagonal(a):
+    """Computes the mean of off-diagonal elements"""
+    n = a.numel()
+    return (a.sum()-a.trace()) / (n*n-n)
+
 
 class NTXenLoss(nn.Module):
     """
@@ -72,9 +77,36 @@ class NTXenLoss(nn.Module):
         # (x transforms via T_i and T_j)
         sim_zij = (z_i @ z_j.T) / self.temperature
 
+        # Diagonals as 1D tensor
+        diag_ij = sim_zij.diagonal()
+
+        # Prints means of positive pairs (views from the same image)
+        mean_positive_pairs = diag_ij.mean()
+        print(f"mean of positives = {mean_positive_pairs}")
+
+        # Computes means of negative pairs
+        mean_negative_ii = mean_off_diagonal(sim_zii)
+        mean_negative_jj = mean_off_diagonal(sim_zjj)
+        mean_negative_ij = mean_off_diagonal(sim_zij)
+
+        # Prints means of negative pairs
+        print(f"mean of negatives ii = {mean_negative_ii}")
+        print(f"mean of negatives jj = {mean_negative_jj}")
+        print(f"mean of negatives ij = {mean_negative_ij}")
+
         # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
         sim_zii = sim_zii - self.INF * torch.eye(N, device=z_i.device)
         sim_zjj = sim_zjj - self.INF * torch.eye(N, device=z_i.device)
+        
+
+        # 'Remove' the parts that are hard negatives to promote clustering
+        sim_zii[sim_zii > mean_negative_ii] = -self.INF
+        sim_zjj[sim_zii > mean_negative_jj] = -self.INF
+
+        negative_ij = sim_zij - diag_ij.diag()
+        negative_ij[negative_ij > mean_negative_ij] = -self.INF
+        negative_ij.fill_diagonal_(0.)
+        sim_zij = negative_ij + diag_ij.diag()
 
         correct_pairs = torch.arange(N, device=z_i.device).long()
         loss_i = func.cross_entropy(torch.cat([sim_zij, sim_zii], dim=1),
