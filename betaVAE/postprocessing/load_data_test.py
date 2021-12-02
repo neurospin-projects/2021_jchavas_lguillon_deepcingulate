@@ -9,7 +9,7 @@ import datasets
 import numpy as np
 
 
-data_dir = '/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/centered_combined/'
+data_dir = '/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/1mm/centered_combined/'
 
 subject_dir = "/neurospin/dico/data/deep_folding/current/"
 side = 'R'
@@ -17,7 +17,7 @@ side = 'R'
 def load(data_dir=data_dir, subject_dir=subject_dir):
 
     ###### HCP Train + val sets
-    train_list = pd.read_csv(os.path.join(subject_dir, 'train.csv'), header=None,
+    train_list = pd.read_csv(os.path.join(subject_dir, 'train_HCP_951.csv'), header=None,
                             usecols=[0], names=['subjects'])
 
     train_list['subjects'] = train_list['subjects'].astype('str')
@@ -31,7 +31,7 @@ def load(data_dir=data_dir, subject_dir=subject_dir):
                                               shuffle=False, num_workers=0)
 
     ###### HCP test sets
-    test_list = pd.read_csv(os.path.join(subject_dir, 'test.csv'), header=None,
+    test_list = pd.read_csv(os.path.join(subject_dir, 'test_HCP_150.csv'), header=None,
                             usecols=[0], names=['subjects'])
 
     test_list['subjects'] = test_list['subjects'].astype('str')

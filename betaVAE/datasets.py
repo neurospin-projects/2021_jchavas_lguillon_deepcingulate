@@ -49,7 +49,7 @@ from preprocess import *
 #from .pynet_transforms import *
 
 subject_dir = "/neurospin/dico/data/deep_folding/current/"
-data_dir = "/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/centered_combined/hcp/"
+data_dir = "/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/1mm/centered_combined/hcp/"
 
 
 class SkeletonDataset():
@@ -124,7 +124,7 @@ def create_train_set(side='R'):
          dataset_val_loader,
          dataset_test_loader
     """
-    train_list = pd.read_csv(os.path.join(subject_dir, 'train.csv'), header=None,
+    train_list = pd.read_csv(os.path.join(subject_dir, 'train_HCP_951.csv'), header=None,
                             usecols=[0], names=['subjects'])
     train_list['subjects'] = train_list['subjects'].astype('str')
 

@@ -16,12 +16,12 @@ import json
 import umap
 
 """============== Parameters ============="""
-n = 20
+n = 40
 kl = 8
 side='R'
 
-data_dir = '/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/centered_combined/'
-root_dir = f"/neurospin/dico/lguillon/midl_22/gridsearch/n_{n}_kl_{kl}/"
+data_dir = '/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/1mm/hcp/centered_combined/'
+root_dir = f"/neurospin/dico/lguillon/midl_22/1mm/n_{n}_kl_{kl}/"
 subject_dir = "/neurospin/dico/data/deep_folding/current/"
 
 result = {"silhouette_kmeans_latent_space_hcp":0, # kmeans trained on train + val
@@ -36,7 +36,7 @@ result = {"silhouette_kmeans_latent_space_hcp":0, # kmeans trained on train + va
            }
 
 """=================== Loading of the model ================"""
-model = VAE((1, 20, 40, 40), n, depth=3)
+model = VAE((1, 32, 80, 72), n, depth=3)
 model.load_state_dict(torch.load(root_dir + 'checkpoint.pt'))
 
 
@@ -72,6 +72,15 @@ result["silhouette_kmeans_latent_space_hcp"] = str(metrics.silhouette_score(X_tr
 #### On tSNE space
 ## tSNE reduction
 X_embedded = TSNE(n_components=2, perplexity=8).fit_transform(X_train)
+
+x = [X_embedded[k][0] for k in range(len(X_embedded))]
+y = [X_embedded[k][1] for k in range(len(X_embedded))]
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.scatter(x, y)
+
+plt.savefig(root_dir+'train_tsne.png')
 
 ## kmeans
 kmeans_tsne_hcp= KMeans(n_clusters=2, random_state=0).fit(X_embedded)

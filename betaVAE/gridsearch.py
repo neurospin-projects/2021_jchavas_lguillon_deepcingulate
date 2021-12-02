@@ -14,18 +14,20 @@ import datasets
 from deep_folding.utils.pytorchtools import EarlyStopping
 from sklearn.model_selection import train_test_split
 
+_in_shape = (1, 32, 80, 72)
+
 
 def train_vae(config, root_dir=None):
     torch.manual_seed(0)
     lr = 2e-4
-    vae = VAE((1, 20, 40, 40), config["n"], depth=3)
+    vae = VAE(_in_shape, config["n"], depth=3)
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda:0"
         if torch.cuda.device_count() > 1:
             vae = nn.DataParallel(vae)
     vae.to(device)
-    summary(vae, (1, 20, 40, 40))
+    summary(vae, _in_shape)
 
     #weights = [1, 200, 27, 356]
     #weights = [1, 20, 10, 30]
@@ -148,12 +150,12 @@ def train_vae(config, root_dir=None):
 
 def main():
     config = {"kl": [1, 2, 5, 8, 10],
-              "n": [20, 50, 75, 700, 150]
+              "n": [5, 15, 40, 75, 100]
     }
-    #config = {"lr": 2e-4, "kl": 1, "n": 20}
+    #config = {"kl": [2], "n": [150]}
     for kl, n in list(itertools.product(config["kl"], config["n"])):
         cur_config = {"kl": kl, "n": n}
-        root_dir = f"/neurospin/dico/lguillon/midl_22/gridsearch/n_{n}_kl_{kl}/"
+        root_dir = f"/neurospin/dico/lguillon/midl_22/1mm/n_{n}_kl_{kl}/"
 
         try:
             os.mkdir(root_dir)
