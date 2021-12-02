@@ -42,6 +42,7 @@ import torch
 import numpy as np
 from SimCLR.losses import NTXenLoss
 from SimCLR.losses import NTXenLoss_NearestNeighbours
+from SimCLR.losses import NTXenLoss_Mixed
 from SimCLR.models.densenet import DenseNet
 from sklearn.manifold import TSNE
 
@@ -109,7 +110,7 @@ class ContrastiveLearner(DenseNet):
 
     def nt_xen_loss(self, z_i, z_j):
         """Loss function"""
-        loss = NTXenLoss_NearestNeighbours(temperature=self.config.temperature,
+        loss = NTXenLoss_Mixed(temperature=self.config.temperature,
                          return_logits=True)
         return loss.forward(z_i, z_j)
 
