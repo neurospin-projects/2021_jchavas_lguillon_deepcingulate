@@ -74,8 +74,9 @@ class VAE(nn.Module):
         self.n_latent = n_latent
         c,h,w,d = in_shape
         self.depth = depth
-        self.z_dim = w//2**depth # receptive field downsampled 2 times
-        self.z_dim_x = h//2**depth
+        self.z_dim_h = h//2**depth # receptive field downsampled 2 times
+        self.z_dim_w = w//2**depth
+        self.z_dim_d = d//2**depth
 
         modules_encoder = []
         for step in range(depth):
@@ -91,15 +92,16 @@ class VAE(nn.Module):
             modules_encoder.append(('LeakyReLU%sa' %step, nn.LeakyReLU()))
         self.encoder = nn.Sequential(OrderedDict(modules_encoder))
 
-        self.z_mean = nn.Linear(64 * self.z_dim**2 * self.z_dim_x , n_latent) # 8000 -> n_latent = 3
-        self.z_var = nn.Linear(64 * self.z_dim**2 * self.z_dim_x, n_latent) # 8000 -> n_latent = 3
-        self.z_develop = nn.Linear(n_latent, 64 *self.z_dim**2 * self.z_dim_x) # n_latent -> 8000
+        self.z_mean = nn.Linear(64 * self.z_dim_h * self.z_dim_w* self.z_dim_d, n_latent) # 8000 -> n_latent = 3
+        self.z_var = nn.Linear(64 * self.z_dim_h * self.z_dim_w* self.z_dim_d, n_latent) # 8000 -> n_latent = 3
+        self.z_develop = nn.Linear(n_latent, 64 *self.z_dim_h * self.z_dim_w* self.z_dim_d) # n_latent -> 8000
 
         modules_decoder = []
         for step in range(depth-1):
             in_channels = out_channels
             out_channels = in_channels // 2
             ini = 1 if step==0 else 0
+            #ini =0
             modules_decoder.append(('convTrans3d%s' %step, nn.ConvTranspose3d(in_channels,
                         out_channels, kernel_size=2, stride=2, padding=0, output_padding=(ini,0,0))))
             modules_decoder.append(('normup%s' %step, nn.BatchNorm3d(out_channels)))
@@ -153,7 +155,7 @@ class VAE(nn.Module):
         #print("z", z.shape)
         out = self.z_develop(z)
         #print(out.shape)
-        out = out.view(z.size(0), 16 * 2**(self.depth-1), self.z_dim_x, self.z_dim, self.z_dim)
+        out = out.view(z.size(0), 16 * 2**(self.depth-1), self.z_dim_h, self.z_dim_w, self.z_dim_d)
         #print(out.shape)
         out = self.decoder(out)
         #print(out.shape)
@@ -175,66 +177,6 @@ def vae_loss(output, input, mean, logvar, loss_func, kl_weight):
     kl_loss = -0.5 * torch.sum(-torch.exp(logvar) - mean**2 + 1. + logvar)
     #kl_loss = kl_loss / 100
     return recon_loss, kl_loss, recon_loss + kl_weight * kl_loss
-
-
-class classifier(nn.Module):
-    def __init__(self, z, n_classes=2):
-        super().__init__()
-        self.clf = nn.Sequential(
-                    nn.Linear(z.shape[1], z.shape[1]),
-                    nn.Linear(z.shape[1], n_classes),
-                    nn.Sigmoid()
-                    )
-
-    def forward(self, z):
-        y_pred = self.clf(z)
-        return y_pred
-
-    def loss_clf(self, y_pred, y_true):
-        loss = nn.BCELoss()
-        output_clf = loss(y_pred, y_true)
-        return output_clf
-
-class clfTrainer():
-    def __init__(self, encoded, label):
-        self.encoded = torch.from_numpy(encoded)
-        y_true = []
-        for i, val in enumerate(label):
-            if val=='benchmark':
-                y_true.append([1, 0])
-            else:
-                y_true.append([0, 1])
-        #label[label=='benchmark']=(1, 0)
-        #label[label=='normal_test']=(0, 1)
-        label = torch.from_numpy(np.array(y_true)).float()
-        self.label = label
-        self.clf = classifier(self.encoded)
-        self.optimizer = torch.optim.Adam(self.clf.parameters(), lr=1e-4)
-
-    def train(self):
-        for epoch in range(20):
-            self.clf.train()
-            for z, y_true in zip(self.encoded, self.label):
-                self.optimizer.zero_grad()
-                output_clf = self.clf(z)
-                loss_clf = self.clf.loss_clf(output_clf, y_true)
-            loss_clf.backward()
-            self.optimizer.step()
-
-    def test(self):
-        self.clf.eval()
-        loss_tot = []
-        total_pred, total_true = [], []
-        for z, y_true in zip(self.encoded, self.label):
-            self.optimizer.zero_grad()
-            output_clf = self.clf(z)
-            loss_clf = self.clf.loss_clf(output_clf, y_true)
-            class_pred = output_clf.argmax()
-            class_true = y_true.argmax()
-            total_pred.append(int(class_pred))
-            total_true.append(int(class_true))
-            loss_tot.append(loss_clf.item())
-        return(balanced_accuracy_score(total_true, total_pred))
 
 
 class ModelTrainer():
@@ -366,14 +308,13 @@ class ModelTrainer():
 class ModelTester():
 
     def __init__(self, model, dico_set_loaders, loss_func, kl_weight,
-                n_latent, depth, skeleton, root_dir):
+                n_latent, depth, root_dir):
         self.model = model
         self.dico_set_loaders = dico_set_loaders
         self.loss_func = loss_func
         self.kl_weight = kl_weight
         self.n_latent = n_latent
         self.depth = depth
-        self.skeleton = skeleton
         self.root_dir = root_dir
 
 
@@ -383,27 +324,22 @@ class ModelTester():
         device = torch.device("cuda", index=0)
 
         results = {k:{} for k in self.dico_set_loaders.keys()}
+        out_z = []
 
         for loader_name, loader in self.dico_set_loaders.items():
             self.model.eval()
             with torch.no_grad():
                 for inputs, path in loader:
                     inputs = Variable(inputs).to(device, dtype=torch.float32)
-
                     output, mean, logvar, z = self.model(inputs)
-
-                    if self.skeleton:
-                        target = torch.squeeze(inputs, dim=0).long()
-                        recon_loss_val, kl_val, loss_val = vae_loss(output, target, mean, logvar, self.loss_func,
-                                         kl_weight=self.kl_weight)
-                        output = torch.argmax(output, dim=1)
-
-                    else:
-                        print(output.shape, inputs.shape)
-                        loss = vae_loss(output, inputs, mean, logvar, self.loss_func,
-                                              kl_weight=self.kl_weight)
-
-                    results[loader_name][path] = (loss_val.item(), output, inputs, np.array(torch.squeeze(z, dim=0).cpu().detach().numpy()))
+                    target = torch.squeeze(inputs, dim=1).long()
+                    recon_loss_val, kl_val, loss_val = vae_loss(output, target, mean, logvar, self.loss_func,
+                                     kl_weight=self.kl_weight)
+                    output = torch.argmax(output, dim=1)
+                    #print(z.shape)
+                    #out_z = np.array(z[].cpu().detach().numpy()))
+                    #print(np.array(torch.squeeze(z, dim=0).cpu().detach().numpy()).shape)
+                    #results[loader_name][path] = (loss_val.item(), output, inputs, out_z)
 
                     for k in range(len(path)):
                         id_arr.append(path)
@@ -411,7 +347,13 @@ class ModelTester():
                         output_arr.append(np.squeeze(output).cpu().detach().numpy())
                         phase_arr.append(loader_name)
 
-        for key, array in {'input': input_arr, 'output' : output_arr,
-                            'phase': phase_arr, 'id': id_arr}.items():
-            np.save(self.root_dir+key+'val', np.array([array]))
+                        #out_z.append(np.array(np.squeeze(z[k]).cpu().detach().numpy()))
+                        out_z = np.array(np.squeeze(z[k]).cpu().detach().numpy())
+                        #print(np.array(out_z).shape)
+                        results[loader_name][path[k]] = out_z
+        #print(np.array(out_z).shape)
+
+        #for key, array in {'input': input_arr, 'output' : output_arr,
+        #                    'phase': phase_arr, 'id': id_arr}.items():
+        #    np.save(self.root_dir+key+'val', np.array([array]))
         return results
