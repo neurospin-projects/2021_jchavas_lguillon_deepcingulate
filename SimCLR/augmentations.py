@@ -45,6 +45,10 @@ def rotate_list(l):
     "Rotates list by -1"
     return l[1:] + l[:1]
 
+def checkerboard(shape, tile_size):
+    return (np.indices(shape) // tile_size).sum(axis=0) % 2
+
+
 class PaddingTensor(object):
     """A class to pad a tensor"""
     def __init__(self, shape, nb_channels=1, fill_value=0):
@@ -266,6 +270,47 @@ class PartialCutOutTensor_Roll(object):
 
         return torch.from_numpy(arr_inside + arr_outside)
 
+
+
+class CheckerboardTensor(object):
+    """Apply a checkerboard noise
+    """
+
+    def __init__(self, checkerboard_size):
+        """[summary]
+
+
+        Args:
+
+        """
+        self.checkerboard_size = checkerboard_size
+
+    def __call__(self, tensor):
+
+        arr = tensor.numpy()
+        img_shape = np.array(arr.shape)
+
+        if isinstance(self.checkerboard_size, int):
+            size = [self.checkerboard_size for _ in range(len(img_shape))]
+        else:
+            size = np.copy(self.checkerboard_size)
+        assert len(size) == len(img_shape), "Incorrect patch dimension."
+
+        start_cutout = []
+        for ndim in range(len(img_shape)):
+            if size[ndim] > img_shape[ndim] or size[ndim] < 0:
+                size[ndim] = img_shape[ndim]
+            np.random.seed()
+            delta_before = np.random.randint(0, size[ndim])
+            start_cutout.append(delta_before)
+
+        # Creates checkerboard mask
+        mask = checkerboard(img_shape, self.checkerboard_size).astype('float32')
+
+        for ndim in range(len(img_shape)):
+            mask = np.roll(mask, start_cutout[ndim], axis=ndim)
+
+        return torch.from_numpy(arr*mask)
 
 class PartialCutOutTensor(object):
     """Apply a cutout on the images and puts only bottom value inside the cutout

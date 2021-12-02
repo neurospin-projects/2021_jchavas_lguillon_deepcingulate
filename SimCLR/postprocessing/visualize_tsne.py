@@ -34,6 +34,7 @@
 # knowledge of the CeCILL license version 2 and that you accept its terms.
 
 import logging
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -97,7 +98,8 @@ def plot_tsne(X_tsne, buffer, labels=None):
                           False -> plots the figure
     """
     fig, ax = plt.subplots(1)
-    logger.info(X_tsne.shape)
+    logger.info(f"Matplotlib backend = {matplotlib.get_backend()}")
+    logger.info(f"X_tsne shape = {X_tsne.shape}")
     nb_points = X_tsne.shape[0]
     m = np.repeat(["o"], nb_points)
     if labels is None:
@@ -110,5 +112,7 @@ def plot_tsne(X_tsne, buffer, labels=None):
     if buffer:
         return buffer_to_image(buffer = io.BytesIO())
     else:
+        plt.ion()
         plt.show()
+        plt.pause(0.001)
        

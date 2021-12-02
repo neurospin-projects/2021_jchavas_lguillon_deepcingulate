@@ -41,12 +41,13 @@ https://learnopencv.com/tensorboard-with-pytorch-lightning
 import torch
 import numpy as np
 from SimCLR.losses import NTXenLoss
+from SimCLR.losses import NTXenLoss_NearestNeighbours
 from SimCLR.models.densenet import DenseNet
 from sklearn.manifold import TSNE
 
 from SimCLR.postprocessing.visualize_tsne import plot_tsne
 from SimCLR.postprocessing.visualize_images import plot_bucket
-from SimCLR.postprocessing.visualize_anatomist import plot_bucket_anatomist
+from SimCLR.postprocessing.visualize_anatomist import Visu_Anatomist
 from SimCLR.postprocessing.visualize_images import plot_output
 
 from toolz.itertoolz import last, first
@@ -81,6 +82,7 @@ class ContrastiveLearner(DenseNet):
         self.save_output = SaveOutput()
         self.hook_handles = []
         self.get_layers()
+        self.visu_anatomist = Visu_Anatomist()
 
     def get_layers(self):
         for layer in self.modules():
@@ -107,7 +109,7 @@ class ContrastiveLearner(DenseNet):
 
     def nt_xen_loss(self, z_i, z_j):
         """Loss function"""
-        loss = NTXenLoss(temperature=self.config.temperature,
+        loss = NTXenLoss_NearestNeighbours(temperature=self.config.temperature,
                          return_logits=True)
         return loss.forward(z_i, z_j)
 
@@ -258,10 +260,10 @@ class ContrastiveLearner(DenseNet):
             'input_j', image_input_j, self.current_epoch)
 
         # Plots view using anatomist
-        image_input_i = plot_bucket_anatomist(self.sample_i, buffer=True)
+        image_input_i = self.visu_anatomist.plot_bucket(self.sample_i, buffer=True)
         self.logger.experiment.add_image(
             'input_ana_i', image_input_i, self.current_epoch)
-        image_input_j = plot_bucket_anatomist(self.sample_j, buffer=True)
+        image_input_j = self.visu_anatomist.plot_bucket(self.sample_j, buffer=True)
         self.logger.experiment.add_image(
             'input_ana_j', image_input_j, self.current_epoch)
 
