@@ -11,28 +11,28 @@ from vae import *
 import datasets
 #from ray_tune import test_benchmarks
 from deep_folding.utils.pytorchtools import EarlyStopping
-from sklearn.model_selection import train_test_split
 
 
-def train_vae(config, root_dir=None):
+def train_vae(config, _in_shape, trainloader, valloader, root_dir=None):
     torch.manual_seed(0)
-    vae = VAE((1, 20, 40, 40), config["n"], depth=3)
+    lr = 2e-4
+    vae = VAE(_in_shape, config["n"], depth=3)
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda:0"
         if torch.cuda.device_count() > 1:
             vae = nn.DataParallel(vae)
     vae.to(device)
-    summary(vae, (1, 20, 40, 40))
+    summary(vae, _in_shape)
 
     #weights = [1, 200, 27, 356]
     #weights = [1, 20, 10, 30]
     weights = [1, 1]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
-    optimizer = torch.optim.Adam(vae.parameters(), lr=config["lr"])
+    optimizer = torch.optim.Adam(vae.parameters(), lr=lr)
 
-    trainset = datasets.create_train_set()
+    """trainset = datasets.create_train_set()
     print(len(trainset))
     #train_set, val_set, _, _ = train_test_split(trainset, labels, test_size=0.33,
     #                                    random_state=42)
@@ -50,8 +50,8 @@ def train_vae(config, root_dir=None):
                 num_workers=8,
                 shuffle=True)
     print('size of train loader: ', len(trainloader)*64, 'size of val loader: ',
-          len(valloader)*8)
-    nb_epoch = 500
+          len(valloader)*8)"""
+    nb_epoch = 300
     early_stopping = EarlyStopping(patience=12, verbose=True, root_dir=root_dir)
 
     list_loss_train, list_loss_val = [], []
@@ -142,14 +142,4 @@ def train_vae(config, root_dir=None):
     #knn, logreg, svm = test_benchmarks(testset, config, vae)
     #print(knn, logreg, svm)
     print("Finished Training")
-
-
-def main():
-    config = {"lr": 2e-4, "kl": 1, "n": 20}
-    root_dir = f"/neurospin/dico/lguillon/midl_22/gridsearch/n_{config['n']}_kl_{config['kl']}/"
-
-    train_vae(config, root_dir=root_dir)
-
-
-if __name__ == '__main__':
-    main()
+    return vae
