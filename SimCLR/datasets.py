@@ -105,8 +105,7 @@ class ContrastiveDataset():
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
             PartialCutOutTensor_Roll(from_skeleton=True, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle),
-            CheckerboardTensor(checkerboard_size=self.config.checkerboard_size)
+            RotateTensor(max_angle=self.config.max_angle)
         ])
         
         # - padding
@@ -116,8 +115,7 @@ class ContrastiveDataset():
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
             PartialCutOutTensor_Roll(from_skeleton=False, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle),
-            CheckerboardTensor(checkerboard_size=self.config.checkerboard_size)
+            RotateTensor(max_angle=self.config.max_angle)
         ])
 
         view1 = self.transform1(sample)

@@ -84,6 +84,7 @@ def train(config):
         max_epochs=config.max_epochs,
         logger=tb_logger,
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
+        log_every_n_steps=config.log_every_n_steps,
         resume_from_checkpoint=config.checkpoint_path)
 
     trainer.fit(model, data_module)

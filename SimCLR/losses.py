@@ -77,6 +77,56 @@ class NTXenLoss(nn.Module):
         # (x transforms via T_i and T_j)
         sim_zij = (z_i @ z_j.T) / self.temperature
 
+        # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
+        sim_zii = sim_zii - self.INF * torch.eye(N, device=z_i.device)
+        sim_zjj = sim_zjj - self.INF * torch.eye(N, device=z_i.device)
+
+        correct_pairs = torch.arange(N, device=z_i.device).long()
+        loss_i = func.cross_entropy(torch.cat([sim_zij, sim_zii], dim=1),
+                                    correct_pairs)
+        loss_j = func.cross_entropy(torch.cat([sim_zij.T, sim_zjj], dim=1),
+                                    correct_pairs)
+
+        if self.return_logits:
+            return (loss_i + loss_j), sim_zij, correct_pairs
+
+        return (loss_i + loss_j)
+
+    def __str__(self):
+        return "{}(temp={})".format(type(self).__name__, self.temperature)
+
+
+
+class NTXenLoss_WithoutHardNegative(nn.Module):
+    """
+    Normalized Temperature Cross-Entropy Loss for Constrastive Learning
+    Refer for instance to:
+    Ting Chen, Simon Kornblith, Mohammad Norouzi, Geoffrey Hinton
+    A Simple Framework for Contrastive Learning of Visual Representations,
+    arXiv 2020
+    """
+
+    def __init__(self, temperature=0.1, return_logits=False):
+        super().__init__()
+        self.temperature = temperature
+        self.INF = 1e8
+        self.return_logits = return_logits
+
+    def forward(self, z_i, z_j):
+        N = len(z_i)
+        z_i = func.normalize(z_i, p=2, dim=-1)  # dim [N, D]
+        z_j = func.normalize(z_j, p=2, dim=-1)  # dim [N, D]
+
+        # dim [N, N] => Upper triangle contains incorrect pairs
+        sim_zii = (z_i @ z_i.T) / self.temperature
+
+        # dim [N, N] => Upper triangle contains incorrect pairs
+        sim_zjj = (z_j @ z_j.T) / self.temperature
+
+        # dim [N, N] => the diag contains the correct pairs (i,j)
+        # (x transforms via T_i and T_j)
+        sim_zij = (z_i @ z_j.T) / self.temperature
+
         # Diagonals as 1D tensor
         diag_ij = sim_zij.diagonal()
 
@@ -123,13 +173,13 @@ class NTXenLoss(nn.Module):
         return "{}(temp={})".format(type(self).__name__, self.temperature)
 
 
-class NTXenLoss_Clustering(nn.Module):
+
+class NTXenLoss_NearestNeighbours(nn.Module):
     """
-    Normalized Temperature Cross-Entropy Loss for Constrastive Learning
+    Normalized Nearest Neighbour Temperature Cross-Entropy Loss for Constrastive Learning
     Refer for instance to:
-    Ting Chen, Simon Kornblith, Mohammad Norouzi, Geoffrey Hinton
-    A Simple Framework for Contrastive Learning of Visual Representations,
-    arXiv 2020
+    Dwibedi et al, 2021
+    With a little help from my friends nearest-neighbours
     """
 
     def __init__(self, temperature=0.1, return_logits=False):
@@ -140,6 +190,12 @@ class NTXenLoss_Clustering(nn.Module):
 
     def forward(self, z_i, z_j):
         N = len(z_i)
+        diag_inf = self.INF * torch.eye(N, device=z_i.device)
+
+        #####################################################
+        # Computes the classical terms for NTXenLoss
+        #####################################################
+
         z_i = func.normalize(z_i, p=2, dim=-1)  # dim [N, D]
         z_j = func.normalize(z_j, p=2, dim=-1)  # dim [N, D]
 
@@ -152,15 +208,74 @@ class NTXenLoss_Clustering(nn.Module):
         # dim [N, N] => the diag contains the correct pairs (i,j)
         # (x transforms via T_i and T_j)
         sim_zij = (z_i @ z_j.T) / self.temperature
+        sim_zji = sim_zij.T
+
+        #####################################################
+        # Computes the terms for NearestNeighbour NTXenLoss
+        # loss_i
+        #####################################################
+
+        max_ii = torch.max(sim_zii - diag_inf, dim = 1)
+        max_ij = torch.max(sim_zij - diag_inf, dim = 1)
+
+        # Computes nearest-neighbour of z_i
+        z_nn_i = torch.zeros(z_i.shape, device=z_i.device)
+        for i in range(N):
+            if max_ii.values[i] > max_ij.values[i]:
+                z_nn_i[i] = z_i[max_ii.indices[i]]
+            else:
+                z_nn_i[i] = z_j[max_ij.indices[i]]
+
+        # dim [N, N] => Upper triangle contains incorrect pairs (nn(i),i+)
+        sim_nn_zii = (z_nn_i @ z_i.T) / self.temperature
+
+        # dim [N, N] => the diag contains the correct pairs (nn(i),j)
+        sim_nn_zij = (z_nn_i @ z_j.T) / self.temperature
+
+        # 'Remove' the covariant vectors by penalizing it (exp(-inf) = 0)
+        sim_nn_zii[sim_nn_zii==1.0] = -self.INF
+        sim_nn_zij[sim_nn_zij==1.0] = -self.INF
 
         # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
-        sim_zii = sim_zii - self.INF * torch.eye(N, device=z_i.device)
-        sim_zjj = sim_zjj - self.INF * torch.eye(N, device=z_i.device)
+        sim_nn_zii = sim_nn_zii - diag_inf
 
+        # Computes nearest neighbour contrastive loss for first view i
         correct_pairs = torch.arange(N, device=z_i.device).long()
-        loss_i = func.cross_entropy(torch.cat([sim_zij, sim_zii], dim=1),
+        loss_i = func.cross_entropy(torch.cat([sim_nn_zij, sim_nn_zii], dim=1),
                                     correct_pairs)
-        loss_j = func.cross_entropy(torch.cat([sim_zij.T, sim_zjj], dim=1),
+
+
+        #####################################################
+        # Computes the terms for NearestNeighbour NTXenLoss
+        # loss_j
+        #####################################################
+
+        max_jj = torch.max(sim_zjj - diag_inf, dim = 1)
+        max_ji = torch.max(sim_zji - diag_inf, dim = 1)
+
+        # Computes nearest-neighbour of z_j
+        z_nn_j = torch.zeros(z_j.shape, device=z_j.device)
+        for i in range(N):
+            if max_jj.values[i] > max_ji.values[i]:
+                z_nn_j[i] = z_j[max_jj.indices[i]]
+            else:
+                z_nn_j[i] = z_i[max_ji.indices[i]]
+
+        # dim [N, N] => Upper triangle contains incorrect pairs (nn(i),i+)
+        sim_nn_zjj = (z_nn_j @ z_j.T) / self.temperature
+
+        # dim [N, N] => the diag contains the correct pairs (nn(i),j)
+        sim_nn_zji = (z_nn_j @ z_i.T) / self.temperature
+
+        # 'Remove' the covariant vectors by penalizing it (exp(-inf) = 0)
+        sim_nn_zjj[sim_nn_zjj==1.0] = -self.INF
+        sim_nn_zji[sim_nn_zji==1.0] = -self.INF
+
+        # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
+        sim_nn_zjj = sim_nn_zjj - diag_inf
+
+        # Computes nearest neighbour contrastive loss for first view i
+        loss_j = func.cross_entropy(torch.cat([sim_nn_zji, sim_nn_zjj], dim=1),
                                     correct_pairs)
 
         if self.return_logits:
