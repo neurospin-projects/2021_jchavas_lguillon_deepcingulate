@@ -27,7 +27,7 @@ def train_vae(config, _in_shape, trainloader, valloader, root_dir=None):
 
     #weights = [1, 200, 27, 356]
     #weights = [1, 20, 10, 30]
-    weights = [1, 5]
+    weights = [1, 2]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
     optimizer = torch.optim.Adam(vae.parameters(), lr=lr)

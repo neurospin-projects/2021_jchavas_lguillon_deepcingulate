@@ -36,19 +36,17 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
         device = "cuda:0"
         if torch.cuda.device_count() > 1:
             vae = nn.DataParallel(vae)
-    weights = [1, 5]
+    weights = [1, 2]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
 
     config = {"kl": [1, 2, 5, 8, 10],
               "n": [2, 5, 15, 20, 40, 75, 100]
     }
-    config = {"kl": [2],
-              "n": [2]
-    }
+
     for kl, n in list(itertools.product(config["kl"], config["n"])):
         cur_config = {"kl": kl, "n": n}
-        root_dir = f"/neurospin/dico/lguillon/midl_22/new_design/gridsearch/n_{n}_kl_{kl}_test/"
+        root_dir = f"/neurospin/dico/lguillon/midl_22/new_design/gridsearch/n_{n}_kl_{kl}/"
 
         try:
             os.mkdir(root_dir)
@@ -64,7 +62,7 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
 
         """ Evaluate model performances """
         dico_set_loaders = {'train': trainloader, 'val': valloader}
-        dico_set_loaders = {'val': valloader}
+        #dico_set_loaders = {'val': valloader}
 
         tester = ModelTester(model=vae, dico_set_loaders=dico_set_loaders,
                              loss_func=criterion, kl_weight=kl,
@@ -74,8 +72,8 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
         encoded = {loader_name:[results[loader_name][k] for k in results[loader_name].keys()] for loader_name in dico_set_loaders.keys()}
         #print(type(encoded['val']))
         df_encoded = pd.DataFrame()
-        #df_encoded['latent'] = encoded['train'] + encoded['val']
-        df_encoded['latent'] = encoded['val']
+        df_encoded['latent'] = encoded['train'] + encoded['val']
+        #df_encoded['latent'] = encoded['val']
         X = np.array(list(df_encoded['latent']))
 
         cluster = Cluster(X, root_dir)

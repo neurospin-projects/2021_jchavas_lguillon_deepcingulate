@@ -28,14 +28,14 @@ def cluster():
 class Cluster():
 
     def __init__(self, X, root_dir):
-        self.n_clusters_list = [2, 3, 4]
+        self.n_clusters_list = [2, 3, 4,5,6,7,8,9,10]
         self.x = X
         self.dir = root_dir
 
     def plot_silhouette(self):
         """
         """
-        res_silhouette = {'kmeans':{2: 0, 3: 0, 4: 0},
+        res_silhouette = {'kmeans':{2: 0, 3: 0, 4: 0, 5:0, 6:0, 7: 0, 8: 0, 9:0, 10: 0},
                           'AffinityPropagation':{}}
         for n in self.n_clusters_list:
             cluster_labels= KMeans(n_clusters=n, random_state=0).fit_predict(self.x)
@@ -100,13 +100,13 @@ class Cluster():
             n_clusters_ = len(af.cluster_centers_indices_)
             print(n_clusters_)
 
-        res_silhouette['AffinityPropagation'][n] = str(metrics.silhouette_score(self.x, cluster_labels))
+        res_silhouette['AffinityPropagation'][n_clusters_] = str(metrics.silhouette_score(self.x, x_cluster_label))
         fig2, ax2 = plt.subplots()
         # The (n_clusters+1)*10 is for inserting blank space between silhouette
         # plots of individual clusters, to demarcate them clearly.
         ax2.set_ylim([0, len(self.x) + (n + 1) * 10])
         silhouette_avg = silhouette_score(self.x, x_cluster_label)
-        print("For n_clusters =", n, "The average silhouette_score with AffinityPropagation is :", silhouette_avg)
+        print("For n_clusters =", n_clusters_, "The average silhouette_score with AffinityPropagation is :", silhouette_avg)
 
         # Compute the silhouette scores for each sample
         sample_silhouette_values = silhouette_samples(self.x, cluster_labels)
