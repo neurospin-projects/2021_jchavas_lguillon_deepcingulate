@@ -27,7 +27,7 @@ def train_vae(config, _in_shape, trainloader, valloader, root_dir=None):
 
     #weights = [1, 200, 27, 356]
     #weights = [1, 20, 10, 30]
-    weights = [1, 1]
+    weights = [1, 2]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
     optimizer = torch.optim.Adam(vae.parameters(), lr=lr)
@@ -135,11 +135,11 @@ def train_vae(config, _in_shape, trainloader, valloader, root_dir=None):
 
     plot_loss(list_loss_train[1:], root_dir+'tot_train_')
     plot_loss(list_loss_val[1:], root_dir+'tot_val_')
-
+    final_loss_val = list_loss_val[-1:]
     torch.save((vae.state_dict(), optimizer.state_dict()), root_dir + 'vae.pt')
 
     # test on benchmark discrimination abilities
     #knn, logreg, svm = test_benchmarks(testset, config, vae)
     #print(knn, logreg, svm)
     print("Finished Training")
-    return vae
+    return vae, final_loss_val

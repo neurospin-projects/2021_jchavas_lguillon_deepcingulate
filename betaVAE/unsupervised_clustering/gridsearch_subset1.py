@@ -36,16 +36,14 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
         device = "cuda:0"
         if torch.cuda.device_count() > 1:
             vae = nn.DataParallel(vae)
-    weights = [1, 1]
+    weights = [1, 2]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
 
     config = {"kl": [1, 2, 5, 8, 10],
               "n": [2, 5, 15, 20, 40, 75, 100]
     }
-    #config = {"kl": [1, 2],
-    #          "n": [40]
-    #}
+
     for kl, n in list(itertools.product(config["kl"], config["n"])):
         cur_config = {"kl": kl, "n": n}
         root_dir = f"/neurospin/dico/lguillon/midl_22/new_design/gridsearch/n_{n}_kl_{kl}/"
@@ -58,12 +56,13 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
         print(cur_config)
 
         """ Train model for configuration """
-        vae = train_vae(cur_config, _in_shape, trainloader, valloader,
+        vae, final_loss_val = train_vae(cur_config, _in_shape, trainloader, valloader,
                         root_dir=root_dir)
 
 
         """ Evaluate model performances """
         dico_set_loaders = {'train': trainloader, 'val': valloader}
+        #dico_set_loaders = {'val': valloader}
 
         tester = ModelTester(model=vae, dico_set_loaders=dico_set_loaders,
                              loss_func=criterion, kl_weight=kl,
@@ -74,13 +73,15 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
         #print(type(encoded['val']))
         df_encoded = pd.DataFrame()
         df_encoded['latent'] = encoded['train'] + encoded['val']
+        #df_encoded['latent'] = encoded['val']
         X = np.array(list(df_encoded['latent']))
 
         cluster = Cluster(X, root_dir)
-        res_silhouette = cluster.plot_silhouette()
+        res = cluster.plot_silhouette()
+        res['loss_val'] = final_loss_val
 
         with open(f"{root_dir}results.json", "w") as json_file:
-            json_file.write(json.dumps(res_silhouette, sort_keys=True, indent=4))
+            json_file.write(json.dumps(res, sort_keys=True, indent=4))
 
 def main():
 
