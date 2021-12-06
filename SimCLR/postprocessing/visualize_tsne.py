@@ -89,7 +89,7 @@ def compute_tsne(loader, model, num_outputs):
     return X_tsne
 
 
-def plot_tsne(X_tsne, buffer, labels=None):
+def plot_tsne(X_tsne, buffer, labels=None, savepath=None, type=""):
     """Generates TSNE plot either in a PNG image buffer or as a plot
 
     Args:
@@ -111,6 +111,8 @@ def plot_tsne(X_tsne, buffer, labels=None):
 
     if buffer:
         return buffer_to_image(buffer = io.BytesIO())
+    elif savepath:
+        plt.savefig(f"{savepath}/tsne_{type}.png")
     else:
         plt.ion()
         plt.show()

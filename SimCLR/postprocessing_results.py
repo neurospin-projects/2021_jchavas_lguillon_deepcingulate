@@ -57,6 +57,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
+from sklearn.cluster import AffinityPropagation
 # from sklearn.cluster import OPTICS
 
 from SimCLR.postprocessing.visualize_tsne import plot_tsne
@@ -110,7 +111,7 @@ def postprocessing_results(config: DictConfig) -> None:
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
         resume_from_checkpoint=config.checkpoint_path)
     trainer.test(model) 
-    embeddings, _ = model.compute_representations(data_module.train_dataloader())
+    embeddings, _ = model.compute_representations(data_module.val_dataloader())
     
     # Gets coordinates of first views of the embeddings
     nb_first_views = (embeddings.shape[0])//2
@@ -128,19 +129,33 @@ def postprocessing_results(config: DictConfig) -> None:
     plot_knn_examples(embeddings=embeddings,
                       dataset=data_module.dataset_train,
                       n_neighbors=6,
-                      num_examples=3
+                      num_examples=3,
+                      savepath=config.analysis_path
                       )
     
     # log.info("knn examples done")
 
     # Makes Kmeans and represents it on a t-SNE plot
-    X_tsne = model.compute_tsne(data_module.train_dataloader(), "representation")
+    X_tsne = model.compute_tsne(data_module.val_dataloader(), "representation")
     n_clusters = 2
 
     clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
     # clustering = DBSCAN(eps=2).fit(embeddings)
-    # clustering = OPTICS().fit(embeddings)
-    plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=clustering.labels_)
+    # clustering = OPTICS().fit(embeddings)       
+    plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=clustering.labels_, savepath=config.analysis_path, type='kmeans')
+
+    af = AffinityPropagation().fit(embeddings)
+    cluster_labels_ini = af.labels_
+    initial_centers = af.cluster_centers_indices_
+    n_clusters_ = len(initial_centers)
+    while n_clusters_ > 5:
+        af = AffinityPropagation().fit(embeddings[af.cluster_centers_indices_])
+        center_cluster_labels = af.labels_
+        x_cluster_label = af.predict(embeddings)
+        n_clusters_ = len(af.cluster_centers_indices_)
+        print(n_clusters_)
+    plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=x_cluster_label, savepath=config.analysis_path, type="af")
+
 
     input("Press [enter] to continue.")
 

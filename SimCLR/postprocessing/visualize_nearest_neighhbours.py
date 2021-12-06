@@ -32,7 +32,7 @@ def get_input(dataset, filenames, idx):
     return views[idx%2]
 
 
-def plot_knn_examples(embeddings, dataset, filenames=None, n_neighbors=3, num_examples=6):
+def plot_knn_examples(embeddings, dataset, filenames=None, n_neighbors=3, num_examples=6, savepath=None):
     """Plots multiple rows of random images with their nearest neighbors
     """
     # lets look at the nearest neighbors for some samples
@@ -59,10 +59,13 @@ def plot_knn_examples(embeddings, dataset, filenames=None, n_neighbors=3, num_ex
             ax.set_title(f'd={distances[idx][plot_x_offset]:.3f}')
             # let's disable the axis
             plt.axis('off')
-            
-    plt.ion()
-    plt.show()
-    plt.pause(0.001)
+            if savepath:
+                plt.savefig(f"{savepath}/nearest_neighbours_{idx}.png")
+    
+    if not savepath:
+        plt.ion()
+        plt.show()
+        plt.pause(0.001)
     
    
 def plot_knn_buckets(embeddings, dataset, filenames=None, n_neighbors=3, num_examples=6):
