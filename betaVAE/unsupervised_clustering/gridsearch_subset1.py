@@ -43,6 +43,9 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
     config = {"kl": [1, 2, 5, 8, 10],
               "n": [2, 5, 15, 20, 40, 75, 100]
     }
+    config = {"kl": [8, 10],
+              "n": [75, 100]
+    }
 
     for kl, n in list(itertools.product(config["kl"], config["n"])):
         cur_config = {"kl": kl, "n": n}
