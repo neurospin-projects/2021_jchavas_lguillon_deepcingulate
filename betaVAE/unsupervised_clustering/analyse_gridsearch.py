@@ -8,7 +8,7 @@ import re
 
 import json
 
-root_dir = "/neurospin/dico/lguillon/midl_22/new_design/gridsearch/weight11"
+root_dir = "/neurospin/dico/lguillon/midl_22/new_design/gridsearch/"
 list_n_latent = [2, 5, 15, 20, 40, 75, 100]
 list_kl = [1, 2, 5]
 

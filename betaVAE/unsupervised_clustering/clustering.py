@@ -100,54 +100,55 @@ class Cluster():
             n_clusters_ = len(af.cluster_centers_indices_)
             print(n_clusters_)
 
-        res_silhouette['AffinityPropagation'][n_clusters_] = str(metrics.silhouette_score(self.x, x_cluster_label))
-        fig2, ax2 = plt.subplots()
-        # The (n_clusters+1)*10 is for inserting blank space between silhouette
-        # plots of individual clusters, to demarcate them clearly.
-        ax2.set_ylim([0, len(self.x) + (n + 1) * 10])
-        silhouette_avg = silhouette_score(self.x, x_cluster_label)
-        print("For n_clusters =", n_clusters_, "The average silhouette_score with AffinityPropagation is :", silhouette_avg)
+        if n_clusters_>1:
+            res_silhouette['AffinityPropagation'][n_clusters_] = str(metrics.silhouette_score(self.x, x_cluster_label))
+            fig2, ax2 = plt.subplots()
+            # The (n_clusters+1)*10 is for inserting blank space between silhouette
+            # plots of individual clusters, to demarcate them clearly.
+            ax2.set_ylim([0, len(self.x) + (n + 1) * 10])
+            silhouette_avg = silhouette_score(self.x, x_cluster_label)
+            print("For n_clusters =", n_clusters_, "The average silhouette_score with AffinityPropagation is :", silhouette_avg)
 
-        # Compute the silhouette scores for each sample
-        sample_silhouette_values = silhouette_samples(self.x, cluster_labels)
+            # Compute the silhouette scores for each sample
+            sample_silhouette_values = silhouette_samples(self.x, cluster_labels)
 
-        y_lower = 10
-        for i in range(n_clusters_):
-            # Aggregate the silhouette scores for samples belonging to
-            # cluster i, and sort them
-            ith_cluster_silhouette_values = sample_silhouette_values[cluster_labels == i]
+            y_lower = 10
+            for i in range(n_clusters_):
+                # Aggregate the silhouette scores for samples belonging to
+                # cluster i, and sort them
+                ith_cluster_silhouette_values = sample_silhouette_values[cluster_labels == i]
 
-            ith_cluster_silhouette_values.sort()
+                ith_cluster_silhouette_values.sort()
 
-            size_cluster_i = ith_cluster_silhouette_values.shape[0]
-            y_upper = y_lower + size_cluster_i
+                size_cluster_i = ith_cluster_silhouette_values.shape[0]
+                y_upper = y_lower + size_cluster_i
 
-            color = cm.nipy_spectral(float(i) / n)
-            ax2.fill_betweenx(
-                np.arange(y_lower, y_upper),
-                0,
-                ith_cluster_silhouette_values,
-                facecolor=color,
-                edgecolor=color,
-                alpha=0.7,
-            )
+                color = cm.nipy_spectral(float(i) / n)
+                ax2.fill_betweenx(
+                    np.arange(y_lower, y_upper),
+                    0,
+                    ith_cluster_silhouette_values,
+                    facecolor=color,
+                    edgecolor=color,
+                    alpha=0.7,
+                )
 
-            # Label the silhouette plots with their cluster numbers at the middle
-            ax2.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+                # Label the silhouette plots with their cluster numbers at the middle
+                ax2.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
 
-            # Compute the new y_lower for next plot
-            y_lower = y_upper + 10  # 10 for the 0 samples
+                # Compute the new y_lower for next plot
+                y_lower = y_upper + 10  # 10 for the 0 samples
 
-        ax2.set_title("The silhouette plot for the various clusters.")
-        ax2.set_xlabel("The silhouette coefficient values")
-        ax2.set_ylabel("Cluster label")
+            ax2.set_title("The silhouette plot for the various clusters.")
+            ax2.set_xlabel("The silhouette coefficient values")
+            ax2.set_ylabel("Cluster label")
 
-        # The vertical line for average silhouette score of all the values
-        ax2.axvline(x=silhouette_avg, color="red", linestyle="--")
+            # The vertical line for average silhouette score of all the values
+            ax2.axvline(x=silhouette_avg, color="red", linestyle="--")
 
-        ax2.set_yticks([])  # Clear the yaxis labels / ticks
-        ax2.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
-        plt.savefig(f"{self.dir}AffinityPropagation_silhouette.png")
+            ax2.set_yticks([])  # Clear the yaxis labels / ticks
+            ax2.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
+            plt.savefig(f"{self.dir}AffinityPropagation_silhouette.png")
 
         print(res_silhouette)
         return res_silhouette
