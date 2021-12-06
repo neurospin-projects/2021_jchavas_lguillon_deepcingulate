@@ -48,6 +48,7 @@ from SimCLR.augmentations import SimplifyTensor
 from SimCLR.augmentations import PartialCutOutTensor
 from SimCLR.augmentations import PartialCutOutTensor_Roll
 from SimCLR.augmentations import CheckerboardTensor
+from SimCLR.augmentations import BinarizeTensor
 
 _ALL_SUBJECTS = -1
 
@@ -105,7 +106,8 @@ class ContrastiveDataset():
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
             PartialCutOutTensor_Roll(from_skeleton=True, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle)
+            RotateTensor(max_angle=self.config.max_angle),
+            BinarizeTensor()
         ])
         
         # - padding
@@ -115,7 +117,8 @@ class ContrastiveDataset():
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
             PartialCutOutTensor_Roll(from_skeleton=False, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle)
+            RotateTensor(max_angle=self.config.max_angle),
+            BinarizeTensor()
         ])
 
         view1 = self.transform1(sample)

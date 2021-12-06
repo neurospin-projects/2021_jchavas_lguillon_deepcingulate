@@ -105,3 +105,14 @@ def plot_output(img, buffer):
         return buffer_to_image(buffer = io.BytesIO())
     else:
         plt.show()
+
+def plot_histogram(tensor, buffer):
+    """Plots histogram of the values of a tensor"""
+    arr = tensor.detach().cpu().numpy()*100
+    
+    plt.hist(arr.flatten(), bins=50, range=[-100,100])
+    
+    if buffer:
+        return buffer_to_image(buffer = io.BytesIO())
+    else:
+        plt.show()

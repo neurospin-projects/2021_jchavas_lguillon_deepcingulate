@@ -151,6 +151,17 @@ class OnlyBottomTensor(object):
         arr = arr * (arr==30)   
         return torch.from_numpy(arr)  
     
+class BinarizeTensor(object):
+    """Puts non-zero values to 1
+    """
+
+    def __init__(self):
+        None
+        
+    def __call__(self, tensor):
+        arr = tensor.numpy()
+        arr[arr > 0] = 1 
+        return torch.from_numpy(arr)  
 
 class RotateTensor(object):
     """Apply a random rotation on the images

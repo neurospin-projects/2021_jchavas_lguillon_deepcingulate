@@ -48,6 +48,7 @@ from sklearn.manifold import TSNE
 
 from SimCLR.postprocessing.visualize_tsne import plot_tsne
 from SimCLR.postprocessing.visualize_images import plot_bucket
+from SimCLR.postprocessing.visualize_images import plot_histogram
 from SimCLR.postprocessing.visualize_anatomist import Visu_Anatomist
 from SimCLR.postprocessing.visualize_images import plot_output
 
@@ -110,7 +111,7 @@ class ContrastiveLearner(DenseNet):
 
     def nt_xen_loss(self, z_i, z_j):
         """Loss function"""
-        loss = NTXenLoss_Mixed(temperature=self.config.temperature,
+        loss = NTXenLoss(temperature=self.config.temperature,
                          return_logits=True)
         return loss.forward(z_i, z_j)
 
@@ -120,7 +121,7 @@ class ContrastiveLearner(DenseNet):
         (inputs, filenames) = train_batch
         z_i = self.forward(inputs[:, 0, :])
         z_j = self.forward(inputs[:, 1, :])
-        batch_loss, _, _ = self.nt_xen_loss(z_i, z_j)
+        batch_loss, sim_zij, sim_zii, sim_zjj = self.nt_xen_loss(z_i, z_j)
         self.log('train_loss', float(batch_loss))
 
         # Only computes graph on first step
@@ -131,6 +132,9 @@ class ContrastiveLearner(DenseNet):
         if batch_idx == 0:
             self.sample_i = inputs[:, 0, :].cpu()
             self.sample_j = inputs[:, 1, :].cpu()
+            self.sim_zij = sim_zij * self.config.temperature
+            self.sim_zii = sim_zii * self.config.temperature
+            self.sim_zjj = sim_zjj * self.config.temperature
 
         # logs - a dictionary
         logs = {"train_loss": float(batch_loss)}
@@ -223,12 +227,6 @@ class ContrastiveLearner(DenseNet):
 
         tsne = TSNE(n_components=2, perplexity=5, init='pca', random_state=50)
 
-        # Extract one row out of 2 (to just get first view)
-        # nb_first_views = (X.shape[0])//2
-        # index = np.arange(nb_first_views)*2
-        # Y = X.detach().numpy()
-        # Y = Y[index, :]
-
         Y= X.detach().numpy()
 
         # Makes the t-SNE fit
@@ -240,7 +238,7 @@ class ContrastiveLearner(DenseNet):
         """Computation done at the end of the epoch"""
 
         # Computes t-SNE both in representation and output space
-        if self.current_epoch % 10 == 0 or self.current_epoch >= self.config.max_epochs:
+        if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 or self.current_epoch >= self.config.max_epochs:
             X_tsne = self.compute_tsne(
                 self.sample_data.train_dataloader(), "output")
             image_TSNE = plot_tsne(X_tsne, buffer=True)
@@ -251,6 +249,11 @@ class ContrastiveLearner(DenseNet):
             image_TSNE = plot_tsne(X_tsne, buffer=True)
             self.logger.experiment.add_image(
                 'TSNE representation image', image_TSNE, self.current_epoch)
+
+        # Computes histogram of sim_zij
+        histogram_sim_zij = plot_histogram(self.sim_zij, buffer=True)
+        self.logger.experiment.add_image(
+            'histo_sim_zij', histogram_sim_zij, self.current_epoch)
 
         # Plots views
         image_input_i = plot_bucket(self.sample_i, buffer=True)
@@ -299,7 +302,7 @@ class ContrastiveLearner(DenseNet):
         (inputs, filenames) = val_batch
         z_i = self.forward(inputs[:, 0, :])
         z_j = self.forward(inputs[:, 1, :])
-        batch_loss, logits, target = self.nt_xen_loss(z_i, z_j)
+        batch_loss, sim_zij, sim_zii, sim_zjj = self.nt_xen_loss(z_i, z_j)
         self.log('val_loss', float(batch_loss))
 
         # logs- a dictionary
@@ -319,7 +322,7 @@ class ContrastiveLearner(DenseNet):
         """Computaion done at the end of each validation epoch"""
 
         # Computes t-SNE
-        if self.current_epoch % 10 == 0 or self.current_epoch >= self.config.max_epochs:
+        if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 or self.current_epoch >= self.config.max_epochs:
             X_tsne = self.compute_tsne(self.sample_data.val_dataloader(), "output")
             image_TSNE = plot_tsne(X_tsne, buffer=True)
             self.logger.experiment.add_image(
