@@ -172,8 +172,17 @@ class ContrastiveDataset_Visualization():
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
+            BinarizeTensor(),
             EndTensor()
         ])
+        # self.transform1 = transforms.Compose([
+        #     SimplifyTensor(),
+        #     PaddingTensor(self.config.input_size,
+        #                   fill_value=self.config.fill_value),
+        #     PartialCutOutTensor_Roll(from_skeleton=True, patch_size=self.config.patch_size),
+        #     RotateTensor(max_angle=self.config.max_angle),
+        #     BinarizeTensor()
+        # ])
         
         # - padding
         # - + random rotation
@@ -181,7 +190,9 @@ class ContrastiveDataset_Visualization():
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            EndTensor()
+            PartialCutOutTensor_Roll(from_skeleton=False, patch_size=self.config.patch_size),
+            RotateTensor(max_angle=self.config.max_angle),
+            BinarizeTensor()
         ])
 
         view1 = self.transform1(sample)

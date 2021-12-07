@@ -45,6 +45,7 @@ import os
 import torch
 from omegaconf import DictConfig, OmegaConf
 import pytorch_lightning as pl
+from SimCLR.contrastive_learner import ContrastiveLearner
 from SimCLR.contrastive_learner_visualization import ContrastiveLearner_Visualization
 from SimCLR.datamodule import DataModule
 from SimCLR.datamodule import DataModule_Visualization
@@ -55,6 +56,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 import matplotlib.pyplot as plt
 import numpy as np
+import json
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
 from sklearn.cluster import AffinityPropagation
@@ -63,6 +65,7 @@ from sklearn.cluster import AffinityPropagation
 from SimCLR.postprocessing.visualize_tsne import plot_tsne
 from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_examples
 from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_buckets
+from SimCLR.postprocessing.clustering import Cluster
 
 tb_logger = pl_loggers.TensorBoardLogger('logs')
 writer = SummaryWriter()
@@ -87,10 +90,11 @@ def postprocessing_results(config: DictConfig) -> None:
 
     # Trick
     # Makes a dummy plot before invoking anatomist in headless mode
-    plot = plt.figure()
-    plt.ion()
-    plt.show()
-    plt.pause(0.001)
+    if not config.analysis_path:
+      plot = plt.figure()
+      plt.ion()
+      plt.show()
+      plt.pause(0.001)
 
     data_module = DataModule_Visualization(config)
     data_module.setup(stage='validate')
@@ -110,7 +114,7 @@ def postprocessing_results(config: DictConfig) -> None:
         logger=tb_logger,
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
         resume_from_checkpoint=config.checkpoint_path)
-    trainer.test(model) 
+    result_dict = trainer.validate(model, data_module)[0]
     embeddings, _ = model.compute_representations(data_module.val_dataloader())
     
     # Gets coordinates of first views of the embeddings
@@ -156,8 +160,14 @@ def postprocessing_results(config: DictConfig) -> None:
         print(n_clusters_)
     plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=x_cluster_label, savepath=config.analysis_path, type="af")
 
-
-    input("Press [enter] to continue.")
+    cluster = Cluster(X=embeddings, root_dir=config.analysis_path)
+    silhouette_dict = cluster.plot_silhouette()
+    result_dict.update(silhouette_dict)
+    result_dict.update({
+      "latent_space_size":config.num_representation_features,
+      "temperature": config.temperature})
+    with open(f"{config.analysis_path}/result.json", 'w') as fp:
+      json.dump(result_dict, fp)
 
 if __name__ == "__main__":
     postprocessing_results()

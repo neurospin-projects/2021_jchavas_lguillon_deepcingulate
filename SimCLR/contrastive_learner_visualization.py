@@ -94,19 +94,3 @@ class ContrastiveLearner_Visualization(ContrastiveLearner):
         image_input_j = self.visu_anatomist.plot_bucket(self.sample_j, buffer=True)
         self.logger.experiment.add_image(
             'input_test_j', image_input_j, self.current_epoch)
-
-    def validation_step(self, val_batch, batch_idx):
-        (inputs, filenames) = val_batch
-        if self.recording_done == False:
-            self.recording_done = True
-            self.val_sample_i.append(inputs[:, 0, :].cpu())
-            self.val_sample_j.append(inputs[:, 1, :].cpu())
-
-    def validation_epoch_end(self, outputs):
-        image_input_i = self.visu_anatomist.plot_bucket(self.val_sample_i, buffer=True)
-        self.logger.experiment.add_image(
-            'input_test_i val', image_input_i, self.current_epoch)
-        image_input_j = self.visu_anatomist.plot_bucket(self.val_sample_j, buffer=True)
-        self.logger.experiment.add_image(
-            'input_test_j val', image_input_j, self.current_epoch)
-
