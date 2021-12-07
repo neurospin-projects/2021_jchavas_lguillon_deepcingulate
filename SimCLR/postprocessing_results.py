@@ -115,12 +115,13 @@ def postprocessing_results(config: DictConfig) -> None:
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
         resume_from_checkpoint=config.checkpoint_path)
     result_dict = trainer.validate(model, data_module)[0]
-    embeddings, _ = model.compute_representations(data_module.val_dataloader())
+    embeddings, filenames = model.compute_representations(data_module.val_dataloader())
     
     # Gets coordinates of first views of the embeddings
     nb_first_views = (embeddings.shape[0])//2
     index = np.arange(nb_first_views)*2
     embeddings = embeddings[index, :]
+    filenames = filenames[::2]
 
     # plot_knn_buckets(embeddings=embeddings,
     #                 dataset=data_module.dataset_train,
@@ -131,7 +132,7 @@ def postprocessing_results(config: DictConfig) -> None:
     # log.info("knn meshes done")
 
     plot_knn_examples(embeddings=embeddings,
-                      dataset=data_module.dataset_train,
+                      dataset=data_module.dataset_val,
                       n_neighbors=6,
                       num_examples=3,
                       savepath=config.analysis_path
@@ -166,8 +167,14 @@ def postprocessing_results(config: DictConfig) -> None:
     result_dict.update({
       "latent_space_size":config.num_representation_features,
       "temperature": config.temperature})
+
+    # Saves results in files
     with open(f"{config.analysis_path}/result.json", 'w') as fp:
       json.dump(result_dict, fp)
+    torch.save(embeddings, f"{config.analysis_path}/val_embeddings.pt")
+    with open(f"{config.analysis_path}/val_filenames.json", 'w') as f:
+      json.dump(filenames, f, indent=2)
+
 
 if __name__ == "__main__":
     postprocessing_results()
