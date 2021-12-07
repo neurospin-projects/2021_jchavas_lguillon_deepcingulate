@@ -10,7 +10,7 @@ import json
 
 root_dir = "/neurospin/dico/lguillon/midl_22/new_design/gridsearch/"
 list_n_latent = [2, 5, 15, 20, 40, 75, 100]
-list_kl = [1, 2, 5]
+list_kl = [1, 2, 5, 8]
 
 for kl in list_kl :
     list_loss_val = []
