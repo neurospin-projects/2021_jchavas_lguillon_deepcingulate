@@ -144,8 +144,8 @@ def postprocessing_results(config: DictConfig) -> None:
     X_tsne = model.compute_tsne(data_module.val_dataloader(), "representation")
     n_clusters = 2
 
-    clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
-    # clustering = DBSCAN(eps=2).fit(embeddings)
+    # clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
+    clustering = DBSCAN(eps=2).fit(embeddings)
     # clustering = OPTICS().fit(embeddings)       
     plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=clustering.labels_, savepath=config.analysis_path, type='kmeans')
 
