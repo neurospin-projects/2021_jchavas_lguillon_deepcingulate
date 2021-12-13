@@ -115,7 +115,7 @@ def postprocessing_results(config: DictConfig) -> None:
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
         resume_from_checkpoint=config.checkpoint_path)
     result_dict = trainer.validate(model, data_module)[0]
-    embeddings, filenames = model.compute_representations(data_module.val_dataloader())
+    embeddings, filenames = model.compute_representations(data_module.train_val_dataloader())
     
     # Gets coordinates of first views of the embeddings
     nb_first_views = (embeddings.shape[0])//2
@@ -131,23 +131,33 @@ def postprocessing_results(config: DictConfig) -> None:
     
     # log.info("knn meshes done")
 
-    plot_knn_examples(embeddings=embeddings,
-                      dataset=data_module.dataset_val,
-                      n_neighbors=6,
-                      num_examples=3,
-                      savepath=config.analysis_path
-                      )
+    # plot_knn_examples(embeddings=embeddings,
+    #                   dataset=data_module.dataset_val,
+    #                   n_neighbors=6,
+    #                   num_examples=3,
+    #                   savepath=config.analysis_path
+    #                   )
     
     # log.info("knn examples done")
 
     # Makes Kmeans and represents it on a t-SNE plot
-    X_tsne = model.compute_tsne(data_module.val_dataloader(), "representation")
+    X_tsne = model.compute_tsne(data_module.train_val_dataloader(), "representation")
     n_clusters = 2
 
-    # clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
-    clustering = DBSCAN(eps=2).fit(embeddings)
-    # clustering = OPTICS().fit(embeddings)       
-    plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=clustering.labels_, savepath=config.analysis_path, type='kmeans')
+    clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
+    plot_tsne(X_tsne=X_tsne[index,:],
+          buffer=False,
+          labels=clustering.labels_,
+          savepath=config.analysis_path,
+          type='kmeans')
+    for eps in [1., 1.5, 1.8, 2., 2.2, 2.5, 3., 3.5]:
+      clustering = DBSCAN(eps=eps).fit(embeddings)
+      # clustering = OPTICS().fit(embeddings)       
+      plot_tsne(X_tsne=X_tsne[index,:],
+                buffer=False,
+                labels=clustering.labels_,
+                savepath=config.analysis_path,
+                type=f"dbscan_{eps}")
 
     af = AffinityPropagation().fit(embeddings)
     cluster_labels_ini = af.labels_
@@ -171,8 +181,8 @@ def postprocessing_results(config: DictConfig) -> None:
     # Saves results in files
     with open(f"{config.analysis_path}/result.json", 'w') as fp:
       json.dump(result_dict, fp)
-    torch.save(embeddings, f"{config.analysis_path}/val_embeddings.pt")
-    with open(f"{config.analysis_path}/val_filenames.json", 'w') as f:
+    torch.save(embeddings, f"{config.analysis_path}/train_val_embeddings.pt")
+    with open(f"{config.analysis_path}/train_val_filenames.json", 'w') as f:
       json.dump(filenames, f, indent=2)
 
 
