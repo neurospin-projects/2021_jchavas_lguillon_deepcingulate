@@ -41,11 +41,14 @@
 import logging
 
 import hydra
+import os
 import torch
+from omegaconf import DictConfig, OmegaConf
 import pytorch_lightning as pl
 from SimCLR.contrastive_learner import ContrastiveLearner
-from SimCLR.contrastive_learner_test import ContrastiveLearnerTest
+from SimCLR.contrastive_learner_visualization import ContrastiveLearner_Visualization
 from SimCLR.datamodule import DataModule
+from SimCLR.datamodule import DataModule_Visualization
 from SimCLR.utils import process_config
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.utilities.seed import seed_everything
@@ -53,16 +56,16 @@ from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.axes_grid1 import ImageGrid
+import json
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
-from sklearn.cluster import OPTICS
+from sklearn.cluster import AffinityPropagation
+# from sklearn.cluster import OPTICS
 
 from SimCLR.postprocessing.visualize_tsne import plot_tsne
 from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_examples
 from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_buckets
-
-from soma import aims
+from SimCLR.postprocessing.clustering import Cluster
 
 tb_logger = pl_loggers.TensorBoardLogger('logs')
 writer = SummaryWriter()
@@ -75,47 +78,29 @@ We call:
 - output, the space after the projection head.
   The elements are called output vectors
 """
-
       
 @hydra.main(config_name='config', config_path="config")
-def postprocessing_results(config):
+def postprocessing_results(config: DictConfig) -> None:
+    print(OmegaConf.to_yaml(config))
     config = process_config(config)
 
     # Sets seed for pseudo-random number generators
     # in: pytorch, numpy, python.random
     # seed_everything(config.seed)
 
-    data_module = DataModule(config)
-    data_module.setup(stage='validate')
+    # Trick
+    # Makes a dummy plot before invoking anatomist in headless mode
+    if not config.analysis_path:
+      plot = plt.figure()
+      plt.ion()
+      plt.show()
+      plt.pause(0.001)
 
-    # Show the views of the first batch
-    # fig = plt.figure(figsize=(4., 8.), dpi=400)
-    # grid = ImageGrid(fig, 111,
-    #                 nrows_ncols = (config.batch_size//4, 8),
-    #                 axes_pad=0.2,)
-    # (inputs, filenames) = next(iter(data_module.val_dataloader()))
-    # input_i = inputs[:, 0, :]
-    # input_j = inputs[:, 1, :]
-    # print("input_i : {}".format(np.unique(input_i)))
-    # print("input_j : {}".format(np.unique(input_j)))
-    # images = []
-    # np.save("input_i.npy", input_i[0, 0, :, :, :])
-    # np.save("input_j.npy", input_j[0, 0, :, :, :])
-    # vol_i = aims.Volume(1, 80, 80, 80, dtype=np.int32)
-    # np.asarray(vol_i)[:] = input_i[0, :, :, :, :]
-    # aims.write(vol_i, 'input_i.nii')
-    # print(np.unique(input_i[0, :, :, :, :]))
-    # for i in range(config.batch_size):
-    #     images.append(input_i[i, 0, input_i.shape[2]//2, :, :])
-    #     images.append(input_j[i, 0, input_i.shape[2]//2, :, :])
-    # for ax, im in zip(grid, images):
-    #     ax.imshow(im)
-    #     ax.axis('off')
-    #     ax.set_title(np.unique(im)[1], fontsize=4)
-    # plt.show()
+    data_module = DataModule_Visualization(config)
+    data_module.setup(stage='validate')
     
     # Show the views of the first skeleton after each epoch
-    model = ContrastiveLearner(config,
+    model = ContrastiveLearner_Visualization(config,
                             mode="encoder",
                             sample_data=data_module)
     model = model.load_from_checkpoint(config.checkpoint_path,
@@ -129,15 +114,17 @@ def postprocessing_results(config):
         logger=tb_logger,
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
         resume_from_checkpoint=config.checkpoint_path)
-    trainer.test(model) 
-    embeddings, filenames = model.compute_representations(data_module.test_dataloader())
+    result_dict = trainer.validate(model, data_module)[0]
+    embeddings, filenames = model.compute_representations(data_module.train_val_dataloader())
     
-    data_module_visu = DataModule(config)
-    data_module_visu.setup(stage='validate', mode='visualization')
-    
+    # Gets coordinates of first views of the embeddings
+    nb_first_views = (embeddings.shape[0])//2
+    index = np.arange(nb_first_views)*2
+    embeddings = embeddings[index, :]
+    filenames = filenames[::2]
+
     # plot_knn_buckets(embeddings=embeddings,
-    #                 filenames=filenames,
-    #                 dataset=data_module_visu.dataset_test,
+    #                 dataset=data_module.dataset_train,
     #                 n_neighbors=6,
     #                 num_examples=3
     #                 )
@@ -145,26 +132,58 @@ def postprocessing_results(config):
     # log.info("knn meshes done")
 
     # plot_knn_examples(embeddings=embeddings,
-    #                   filenames=filenames,
-    #                   dataset=data_module_visu.dataset_test,
+    #                   dataset=data_module.dataset_val,
     #                   n_neighbors=6,
-    #                   num_examples=3
+    #                   num_examples=3,
+    #                   savepath=config.analysis_path
     #                   )
     
     # log.info("knn examples done")
 
     # Makes Kmeans and represents it on a t-SNE plot
-    X_tsne = model.compute_tsne(data_module_visu.test_dataloader(), "representation")
-    n_clusters = 4
+    X_tsne = model.compute_tsne(data_module.train_val_dataloader(), "representation")
+    n_clusters = 2
 
-    nb_first_views = (embeddings.shape[0])//2
-    index = np.arange(nb_first_views)*2
-    embeddings = embeddings[index, :]
+    clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
+    plot_tsne(X_tsne=X_tsne[index,:],
+          buffer=False,
+          labels=clustering.labels_,
+          savepath=config.analysis_path,
+          type='kmeans')
+    for eps in [1., 1.5, 1.8, 2., 2.2, 2.5, 3., 3.5]:
+      clustering = DBSCAN(eps=eps).fit(embeddings)
+      # clustering = OPTICS().fit(embeddings)       
+      plot_tsne(X_tsne=X_tsne[index,:],
+                buffer=False,
+                labels=clustering.labels_,
+                savepath=config.analysis_path,
+                type=f"dbscan_{eps}")
 
-    # clustering = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
-    # clustering = DBSCAN(eps=2).fit(embeddings)
-    clustering = OPTICS().fit(embeddings)
-    plot_tsne(X_tsne=X_tsne, buffer=False, labels=clustering.labels_)
+    af = AffinityPropagation().fit(embeddings)
+    cluster_labels_ini = af.labels_
+    initial_centers = af.cluster_centers_indices_
+    n_clusters_ = len(initial_centers)
+    while n_clusters_ > 5:
+        af = AffinityPropagation().fit(embeddings[af.cluster_centers_indices_])
+        center_cluster_labels = af.labels_
+        x_cluster_label = af.predict(embeddings)
+        n_clusters_ = len(af.cluster_centers_indices_)
+        print(n_clusters_)
+    plot_tsne(X_tsne=X_tsne[index,:], buffer=False, labels=x_cluster_label, savepath=config.analysis_path, type="af")
+
+    cluster = Cluster(X=embeddings, root_dir=config.analysis_path)
+    silhouette_dict = cluster.plot_silhouette()
+    result_dict.update(silhouette_dict)
+    result_dict.update({
+      "latent_space_size":config.num_representation_features,
+      "temperature": config.temperature})
+
+    # Saves results in files
+    with open(f"{config.analysis_path}/result.json", 'w') as fp:
+      json.dump(result_dict, fp)
+    torch.save(embeddings, f"{config.analysis_path}/train_val_embeddings.pt")
+    with open(f"{config.analysis_path}/train_val_filenames.json", 'w') as f:
+      json.dump(filenames, f, indent=2)
 
 
 if __name__ == "__main__":

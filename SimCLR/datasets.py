@@ -47,6 +47,8 @@ from SimCLR.augmentations import RotateTensor
 from SimCLR.augmentations import SimplifyTensor
 from SimCLR.augmentations import PartialCutOutTensor
 from SimCLR.augmentations import PartialCutOutTensor_Roll
+from SimCLR.augmentations import CheckerboardTensor
+from SimCLR.augmentations import BinarizeTensor
 
 _ALL_SUBJECTS = -1
 
@@ -104,7 +106,8 @@ class ContrastiveDataset():
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
             PartialCutOutTensor_Roll(from_skeleton=True, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle)
+            RotateTensor(max_angle=self.config.max_angle),
+            BinarizeTensor()
         ])
         
         # - padding
@@ -114,7 +117,8 @@ class ContrastiveDataset():
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
             PartialCutOutTensor_Roll(from_skeleton=False, patch_size=self.config.patch_size),
-            RotateTensor(max_angle=self.config.max_angle)
+            RotateTensor(max_angle=self.config.max_angle),
+            BinarizeTensor()
         ])
 
         view1 = self.transform1(sample)
@@ -132,14 +136,14 @@ class ContrastiveDataset_Visualization():
     Applies different transformations to data depending on the type of input.
     """
 
-    def __init__(self, data_tensor, filenames, config):
+    def __init__(self, dataframe, filenames, config):
         """
         Args:
             data_tensor (tensor): contains MRIs as numpy arrays
             filenames (list of strings): list of subjects' IDs
             config (Omegaconf dict): contains configuration information
         """
-        self.data_tensor = data_tensor.type(torch.float32)
+        self.df = dataframe
         self.transform = True
         self.nb_train = len(filenames)
         log.info(self.nb_train)
@@ -160,15 +164,25 @@ class ContrastiveDataset_Visualization():
         """
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        sample = self.data_tensor[idx]
+        sample = self.df.loc[0].values[idx].astype('float32')
+        sample = torch.from_numpy(sample)
         filename = self.filenames[idx]
 
         self.transform1 = transforms.Compose([
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
+            BinarizeTensor(),
             EndTensor()
         ])
+        # self.transform1 = transforms.Compose([
+        #     SimplifyTensor(),
+        #     PaddingTensor(self.config.input_size,
+        #                   fill_value=self.config.fill_value),
+        #     PartialCutOutTensor_Roll(from_skeleton=True, patch_size=self.config.patch_size),
+        #     RotateTensor(max_angle=self.config.max_angle),
+        #     BinarizeTensor()
+        # ])
         
         # - padding
         # - + random rotation
@@ -176,7 +190,9 @@ class ContrastiveDataset_Visualization():
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            EndTensor()
+            PartialCutOutTensor_Roll(from_skeleton=False, patch_size=self.config.patch_size),
+            RotateTensor(max_angle=self.config.max_angle),
+            BinarizeTensor()
         ])
 
         view1 = self.transform1(sample)
@@ -204,25 +220,32 @@ def create_sets(config, mode='training'):
     normal_subjects = normal_data.columns.tolist()
 
     # Loads benchmarks (crops from another region) from all subjects
-    pickle_benchmark_path = config.pickle_benchmark
-    benchmark_data = pd.read_pickle(pickle_benchmark_path)
+    if config.pickle_benchmark:
+        pickle_benchmark_path = config.pickle_benchmark
+        benchmark_data = pd.read_pickle(pickle_benchmark_path)
 
     # Gets train_val subjects from csv file
     train_val_subjects = pd.read_csv(config.train_val_csv_file, names = ['ID']).T
     train_val_subjects = train_val_subjects.values[0].tolist()
     train_val_subjects = list(map(str, train_val_subjects))
+    print(f"train_val_subjects = {train_val_subjects}")
 
     # Determines test dataframe
     test_subjects = list(set(normal_subjects).difference(train_val_subjects))
     len_test = len(test_subjects)
+    print(f"test_subjects = {test_subjects}")
 
-    normal_test_subjects = test_subjects[:round(len_test/2)]
-    normal_test_data = \
-        normal_data[normal_data.columns.intersection(normal_test_subjects)]
-    benchmark_test_subjects = test_subjects[round(len_test/2):]
-    benchmark_test_data = \
-        benchmark_data[benchmark_data.columns.intersection(benchmark_test_subjects)]
-    test_data = pd.concat([normal_test_data, benchmark_test_data], axis=1, ignore_index=True)
+    if config.pickle_benchmark:
+        normal_test_subjects = test_subjects[:round(len_test/2)]
+        normal_test_data = \
+            normal_data[normal_data.columns.intersection(normal_test_subjects)]
+        benchmark_test_subjects = test_subjects[round(len_test/2):]
+        benchmark_test_data = \
+            benchmark_data[benchmark_data.columns.intersection(benchmark_test_subjects)]
+
+        test_data = pd.concat([normal_test_data, benchmark_test_data], axis=1, ignore_index=True)
+    else:
+        test_data = normal_data[normal_data.columns.intersection(test_subjects)]
 
     # Cuts train_val set to requested number
     if config.nb_subjects == _ALL_SUBJECTS:
@@ -235,23 +258,26 @@ def create_sets(config, mode='training'):
     log.info(f"length of train/val dataframe: {len_train_val}")
 
     # Determines train/val dataframe
-    normal_train_val_subjects = train_val_subjects[:round(len(train_val_subjects)/2)]
-    normal_train_val_data = \
-        normal_data[normal_data.columns.intersection(normal_train_val_subjects)]
-    benchmark_train_val_subjects = train_val_subjects[round(len(train_val_subjects)/2):]
-    benchmark_train_val_data = \
-        benchmark_data[benchmark_data.columns.intersection(benchmark_train_val_subjects)]
-    train_val_data = pd.concat([normal_train_val_data, benchmark_train_val_data], axis=1, ignore_index=True)
+    if config.pickle_benchmark:
+        normal_train_val_subjects = train_val_subjects[:round(len(train_val_subjects)/2)]
+        normal_train_val_data = \
+            normal_data[normal_data.columns.intersection(normal_train_val_subjects)]
+        benchmark_train_val_subjects = train_val_subjects[round(len(train_val_subjects)/2):]
+        benchmark_train_val_data = \
+            benchmark_data[benchmark_data.columns.intersection(benchmark_train_val_subjects)]
+        train_val_data = pd.concat([normal_train_val_data, benchmark_train_val_data], axis=1, ignore_index=True)
+    else:
+        train_val_data = normal_data[normal_data.columns.intersection(train_val_subjects)]
 
     # Creates the dataset from these tensors by doing some preprocessing
     if mode == 'visualization':
         test_dataset = ContrastiveDataset_Visualization(
                             filenames=test_subjects,
-                            data_tensor=test_tensor,
+                            dataframe=test_data,
                             config=config)
         train_val_dataset = ContrastiveDataset_Visualization(
                             filenames=train_val_subjects,
-                            data_tensor=train_val_tensor,
+                            dataframe=train_val_data,
                             config=config)
     else:
         test_dataset = ContrastiveDataset(
@@ -274,4 +300,4 @@ def create_sets(config, mode='training'):
         train_val_dataset,
         [round(i * (len(train_val_dataset))) for i in partition])
 
-    return train_set, val_set, test_dataset
+    return train_set, val_set, test_dataset, train_val_dataset
