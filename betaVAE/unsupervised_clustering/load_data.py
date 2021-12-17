@@ -70,8 +70,9 @@ def create_subset(idx_subset=1):
          dataset_val_loader,
          dataset_test_loader
     """
+    print(os.path.join(subject_dir, f"HCP_half_{idx_subset}_2.csv"))
     train_list = pd.read_csv(os.path.join(subject_dir,
-                             f"HCP_half_{idx_subset}bis.csv"), header=None,
+                             f"HCP_half_{idx_subset}_2.csv"), header=None,
                              usecols=[0], names=['subjects'])
     train_list['subjects'] = train_list['subjects'].astype('str')
 

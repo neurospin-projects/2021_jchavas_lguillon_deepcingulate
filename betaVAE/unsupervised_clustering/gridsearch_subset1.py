@@ -43,8 +43,8 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
     config = {"kl": [1, 2, 5, 8, 10],
               "n": [2, 5, 15, 20, 40, 75, 100]
     }
-    config = {"kl": [8],
-              "n": [40]
+    config = {"kl": [2],
+              "n": [4]
     }
 
     for kl, n in list(itertools.product(config["kl"], config["n"])):
@@ -88,6 +88,8 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
 
 def main():
 
+    torch.manual_seed(0)
+    root_dir = f"/neurospin/dico/lguillon/midl_22/new_design/gridsearch/"
     subset1 = create_subset()
     train_set, val_set = torch.utils.data.random_split(subset1,
                             [round(0.8*len(subset1)), round(0.2*len(subset1))])
@@ -103,6 +105,13 @@ def main():
                 shuffle=True)
     print('size of train loader: ', len(trainloader), 'size of val loader: ',
           len(valloader))
+
+    val_label = []
+    for _, path in valloader:
+        val_label.append(path[0])
+
+    np.savetxt(f"{root_dir}val_label.csv", np.array(val_label), delimiter =", ", fmt ='% s')
+    print('saved')
 
     gridsearch_bVAE_sub1(trainloader, valloader)
 

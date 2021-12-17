@@ -41,7 +41,7 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
 
     config = {"kl": [2],
-              "n": [4]
+              "n": [2]
     }
 
     for kl, n in list(itertools.product(config["kl"], config["n"])):
