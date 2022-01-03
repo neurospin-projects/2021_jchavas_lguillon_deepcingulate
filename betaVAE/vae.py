@@ -165,7 +165,7 @@ class VAE(nn.Module):
         mean, logvar = self.encode(x)
         z = self.sample_z(mean, logvar)
         out = self.decode(z)
-        return out, mean, logvar, z
+        return out, mean, logvar, mean
 
 
 def vae_loss(output, input, mean, logvar, loss_func, kl_weight):

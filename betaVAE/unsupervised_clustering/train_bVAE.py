@@ -51,7 +51,7 @@ def train_vae(config, _in_shape, trainloader, valloader, root_dir=None):
                 shuffle=True)
     print('size of train loader: ', len(trainloader)*64, 'size of val loader: ',
           len(valloader)*8)"""
-    nb_epoch = 300
+    nb_epoch = 500
     early_stopping = EarlyStopping(patience=12, verbose=True, root_dir=root_dir)
 
     list_loss_train, list_loss_val = [], []

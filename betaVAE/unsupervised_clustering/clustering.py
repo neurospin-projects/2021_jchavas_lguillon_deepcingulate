@@ -89,7 +89,7 @@ class Cluster():
             ax1.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
             plt.savefig(f"{self.dir}kmeans_silhouette_{n}clusters.png")
 
-        af = AffinityPropagation(random_state=0).fit(self.x)
+        af = AffinityPropagation(random_state=0, max_iter=1000).fit(self.x)
         cluster_labels_ini = af.labels_
         initial_centers = af.cluster_centers_indices_
         n_clusters_ = len(initial_centers)
