@@ -27,8 +27,7 @@
 # data to be ensured and,  more generally, to use and operate it in the
 
 """
-This program converts volumes contained in a folder into buckets.
-It writes bucket files in the output folder
+This program launches postprocessing_results for each training subfolder
 """
 import six
 import sys

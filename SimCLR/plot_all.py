@@ -122,7 +122,7 @@ if __name__ == '__main__':
     main(argv=sys.argv[1:])
 
     # example of use
-    # python3 analysis_each.py -s ../../../Output/t-0.1
+    # python3 plot_all.py -s ../../../Output/t-0.1
 
 
 
