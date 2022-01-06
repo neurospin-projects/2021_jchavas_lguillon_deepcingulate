@@ -30,7 +30,7 @@ import io
 from numpy import int16
 import matplotlib.pyplot as plt
 
-from .utils import buffer_to_image
+from .visu_utils import buffer_to_image
 
 logger = logging.getLogger(__name__)
 

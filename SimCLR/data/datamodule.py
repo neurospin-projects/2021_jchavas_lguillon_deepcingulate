@@ -34,7 +34,7 @@
 """ Data module
 """
 import pytorch_lightning as pl
-from SimCLR.datasets import create_sets
+from SimCLR.data.datasets import create_sets
 from torch.utils.data import DataLoader
 from torch.utils.data import RandomSampler
 

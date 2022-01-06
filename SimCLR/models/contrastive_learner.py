@@ -41,16 +41,13 @@ https://learnopencv.com/tensorboard-with-pytorch-lightning
 import torch
 import numpy as np
 from SimCLR.losses import NTXenLoss
-from SimCLR.losses import NTXenLoss_NearestNeighbours
-from SimCLR.losses import NTXenLoss_Mixed
-from SimCLR.models.densenet import DenseNet
+from SimCLR.backbones.densenet import DenseNet
 from sklearn.manifold import TSNE
 
-from SimCLR.postprocessing.visualize_tsne import plot_tsne
-from SimCLR.postprocessing.visualize_images import plot_bucket
-from SimCLR.postprocessing.visualize_images import plot_histogram
-from SimCLR.postprocessing.visualize_anatomist import Visu_Anatomist
-from SimCLR.postprocessing.visualize_images import plot_output
+from SimCLR.utils.plots.visualize_tsne import plot_tsne
+from SimCLR.utils.plots.visualize_images import plot_bucket
+from SimCLR.utils.plots.visualize_images import plot_histogram
+from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
 
 from toolz.itertoolz import last, first
 

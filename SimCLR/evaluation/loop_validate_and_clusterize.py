@@ -47,7 +47,7 @@ def parse_args(argv):
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        prog='analysis_each.py',
+        prog='loop_validate_and_clusterize.py',
         description='Analyses all output subfolders')
     parser.add_argument(
         "-s", "--src_dir", type=str, required=True,
@@ -69,7 +69,7 @@ def loop_over_directory(src_dir):
         checkpoint_file = os.path.abspath(checkpoint_file[0])
         checkpoint_path = f"'\"{checkpoint_file}\"'"
         config_path = f"{deep_dir}/.hydra"
-        cmd = f"python3 postprocessing_results.py " \
+        cmd = f"python3 validate_and_clusterize.py " \
             f"+analysis_path={analysis_path} " \
             f"checkpoint_path={checkpoint_path} " \
             f"--config-path={config_path}"

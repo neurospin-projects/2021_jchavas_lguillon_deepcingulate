@@ -32,7 +32,7 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license version 2 and that you accept its terms.
-""" Training SimCLR on skeleton images
+""" Validates and clusterizes
 
 """
 ######################################################################
@@ -45,10 +45,10 @@ import os
 import torch
 from omegaconf import DictConfig, OmegaConf
 import pytorch_lightning as pl
-from SimCLR.contrastive_learner import ContrastiveLearner
-from SimCLR.contrastive_learner_visualization import ContrastiveLearner_Visualization
-from SimCLR.datamodule import DataModule
-from SimCLR.datamodule import DataModule_Visualization
+from SimCLR.models.contrastive_learner import ContrastiveLearner
+from SimCLR.models.contrastive_learner_visualization import ContrastiveLearner_Visualization
+from SimCLR.data.datamodule import DataModule
+from SimCLR.data.datamodule import DataModule_Visualization
 from SimCLR.utils import process_config
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.utilities.seed import seed_everything
@@ -62,10 +62,10 @@ from sklearn.cluster import DBSCAN
 from sklearn.cluster import AffinityPropagation
 # from sklearn.cluster import OPTICS
 
-from SimCLR.postprocessing.visualize_tsne import plot_tsne
-from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_examples
-from SimCLR.postprocessing.visualize_nearest_neighhbours import plot_knn_buckets
-from SimCLR.postprocessing.clustering import Cluster
+from SimCLR.utils.plots.visualize_tsne import plot_tsne
+from SimCLR.utils.plots.visualize_nearest_neighhbours import plot_knn_examples
+from SimCLR.utils.plots.visualize_nearest_neighhbours import plot_knn_buckets
+from SimCLR.evaluation.clustering import Cluster
 
 tb_logger = pl_loggers.TensorBoardLogger('logs')
 writer = SummaryWriter()
@@ -79,7 +79,7 @@ We call:
   The elements are called output vectors
 """
       
-@hydra.main(config_name='config', config_path="config")
+@hydra.main(config_name='config', config_path="configs")
 def postprocessing_results(config: DictConfig) -> None:
     print(OmegaConf.to_yaml(config))
     config = process_config(config)

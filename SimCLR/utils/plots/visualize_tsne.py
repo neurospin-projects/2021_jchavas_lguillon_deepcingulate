@@ -41,7 +41,7 @@ import torch
 import matplotlib.markers as mmarkers
 from sklearn.manifold import TSNE
 import io
-from .utils import buffer_to_image
+from .visu_utils import buffer_to_image
 
 logger = logging.getLogger(__name__)
 

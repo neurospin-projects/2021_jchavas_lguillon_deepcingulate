@@ -37,12 +37,11 @@ A test to just analyze randomly generated input images
 """
 
 import torch
-import numpy as np
 from SimCLR.losses import NTXenLoss
-from SimCLR.models.densenet import DenseNet
-from SimCLR.contrastive_learner import ContrastiveLearner
+from SimCLR.backbones.densenet import DenseNet
+from SimCLR.models.contrastive_learner import ContrastiveLearner
 
-from SimCLR.postprocessing.visualize_anatomist import Visu_Anatomist
+from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
 
 from toolz.itertoolz import last, first
 

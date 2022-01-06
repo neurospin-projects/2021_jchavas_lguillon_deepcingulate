@@ -27,8 +27,8 @@
 # data to be ensured and,  more generally, to use and operate it in the
 
 """
-This program converts volumes contained in a folder into buckets.
-It writes bucket files in the output folder
+This program plots the evolution of the loss and the silhouette score
+as a function of latent space size
 """
 import six
 import sys
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     main(argv=sys.argv[1:])
 
     # example of use
-    # python3 plot_all.py -s ../../../Output/t-0.1
+    # python3 plot_loss_silhouette_score.py -s ../../../Output/t-0.1
 
 
 

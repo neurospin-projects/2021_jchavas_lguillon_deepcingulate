@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 import anatomist.api as anatomist
 from soma import aims
 import colorado as cld
-from SimCLR.postprocessing.visualize_anatomist import Visu_Anatomist
+from .visualize_anatomist import Visu_Anatomist
 import PIL
 import torch
 
