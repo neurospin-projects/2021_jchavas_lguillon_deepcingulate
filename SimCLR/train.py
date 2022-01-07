@@ -66,6 +66,7 @@ We use the following definitions:
   The elements are called output vectors
 """
 
+
 @hydra.main(config_name='config', config_path="configs")
 def train(config):
     config = process_config(config)

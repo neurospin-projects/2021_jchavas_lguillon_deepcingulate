@@ -45,13 +45,12 @@ from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
 
 from toolz.itertoolz import last, first
 
+
 class ContrastiveLearner_Visualization(ContrastiveLearner):
 
     def __init__(self, config, mode, sample_data):
-        super(ContrastiveLearner_Visualization, self).__init__(config=config,
-            mode=mode,
-            sample_data=sample_data
-            )
+        super(ContrastiveLearner_Visualization, self).__init__(
+            config=config, mode=mode, sample_data=sample_data)
         self.config = config
         self.sample_data = sample_data
         self.sample_i = []
@@ -60,7 +59,7 @@ class ContrastiveLearner_Visualization(ContrastiveLearner):
         self.val_sample_j = []
         self.recording_done = False
         self.visu_anatomist = Visu_Anatomist()
-         
+
     def custom_histogram_adder(self):
 
         # iterating through all parameters
@@ -87,9 +86,11 @@ class ContrastiveLearner_Visualization(ContrastiveLearner):
             self.sample_j.append(inputs[:, 1, :].cpu())
 
     def training_epoch_end(self, outputs):
-        image_input_i = self.visu_anatomist.plot_bucket(self.sample_i, buffer=True)
+        image_input_i = self.visu_anatomist.plot_bucket(
+            self.sample_i, buffer=True)
         self.logger.experiment.add_image(
             'input_test_i', image_input_i, self.current_epoch)
-        image_input_j = self.visu_anatomist.plot_bucket(self.sample_j, buffer=True)
+        image_input_j = self.visu_anatomist.plot_bucket(
+            self.sample_j, buffer=True)
         self.logger.experiment.add_image(
             'input_test_j', image_input_j, self.current_epoch)

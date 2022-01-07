@@ -41,9 +41,11 @@ import torch
 from scipy.ndimage import rotate
 from sklearn.preprocessing import OneHotEncoder
 
+
 def rotate_list(l):
     "Rotates list by -1"
     return l[1:] + l[:1]
+
 
 def checkerboard(shape, tile_size):
     return (np.indices(shape) // tile_size).sum(axis=0) % 2
@@ -51,6 +53,7 @@ def checkerboard(shape, tile_size):
 
 class PaddingTensor(object):
     """A class to pad a tensor"""
+
     def __init__(self, shape, nb_channels=1, fill_value=0):
         """ Initialize the instance.
         Parameters
@@ -113,7 +116,8 @@ class PaddingTensor(object):
 
         # fill_arr = np.reshape(fill_arr, (1,) + fill_arr.shape[:-1])
 
-        return torch.from_numpy(fill_arr) 
+        return torch.from_numpy(fill_arr)
+
 
 class EndTensor(object):
     """Puts all internal and external values to background value 0
@@ -121,11 +125,12 @@ class EndTensor(object):
 
     def __init__(self):
         None
-        
+
     def __call__(self, tensor):
         arr = tensor.numpy()
         arr = np.reshape(arr, (1,) + arr.shape[:-1])
-        return torch.from_numpy(arr)  
+        return torch.from_numpy(arr)
+
 
 class SimplifyTensor(object):
     """Puts all internal and external values to background value 0
@@ -133,35 +138,38 @@ class SimplifyTensor(object):
 
     def __init__(self):
         None
-        
+
     def __call__(self, tensor):
         arr = tensor.numpy()
-        arr[arr == 11] = 0    
-        return torch.from_numpy(arr)  
-    
+        arr[arr == 11] = 0
+        return torch.from_numpy(arr)
+
+
 class OnlyBottomTensor(object):
     """Keeps only bottom '30' values, puts everything else to '0'
     """
 
     def __init__(self):
         None
-        
+
     def __call__(self, tensor):
         arr = tensor.numpy()
-        arr = arr * (arr==30)   
-        return torch.from_numpy(arr)  
-    
+        arr = arr * (arr == 30)
+        return torch.from_numpy(arr)
+
+
 class BinarizeTensor(object):
     """Puts non-zero values to 1
     """
 
     def __init__(self):
         None
-        
+
     def __call__(self, tensor):
         arr = tensor.numpy()
-        arr[arr > 0] = 1 
-        return torch.from_numpy(arr)  
+        arr[arr > 0] = 1
+        return torch.from_numpy(arr)
+
 
 class RotateTensor(object):
     """Apply a random rotation on the images
@@ -172,35 +180,35 @@ class RotateTensor(object):
 
     def __call__(self, tensor):
 
-        arr = tensor.numpy()[:,:,:,0]
+        arr = tensor.numpy()[:, :, :, 0]
         arr_shape = arr.shape
         flat_im = np.reshape(arr, (-1, 1))
         im_encoder = OneHotEncoder(sparse=False, categories='auto')
         onehot_im = im_encoder.fit_transform(flat_im)
-        ## rotate one hot im
+        # rotate one hot im
         onehot_im = onehot_im.reshape(*arr_shape, -1)
         onehot_im_result = np.copy(onehot_im)
         n_cat = onehot_im.shape[-1]
-        for axes in (0,1), (0,2), (1,2):
+        for axes in (0, 1), (0, 2), (1, 2):
             np.random.seed()
             angle = np.random.uniform(-self.max_angle, self.max_angle)
             onehot_im_rot = np.empty_like(onehot_im)
             for c in range(n_cat):
                 const = 1 if c == 0 else 0
-                onehot_im_rot[...,c] = rotate(onehot_im_result[...,c],
-                                                angle=angle,
-                                                axes=axes,
-                                                reshape=False,
-                                                mode='constant',
-                                                cval=const)
+                onehot_im_rot[..., c] = rotate(onehot_im_result[..., c],
+                                               angle=angle,
+                                               axes=axes,
+                                               reshape=False,
+                                               mode='constant',
+                                               cval=const)
             onehot_im_result = onehot_im_rot
-        im_rot_flat = im_encoder.inverse_transform(np.reshape(onehot_im_result, (-1, n_cat)))
+        im_rot_flat = im_encoder.inverse_transform(
+            np.reshape(onehot_im_result, (-1, n_cat)))
         im_rot = np.reshape(im_rot_flat, arr_shape)
         arr_rot = np.expand_dims(
             im_rot,
             axis=0)
         return torch.from_numpy(arr_rot)
-
 
 
 class PartialCutOutTensor_Roll(object):
@@ -251,11 +259,11 @@ class PartialCutOutTensor_Roll(object):
                 np.random.seed()
                 delta_before = np.random.randint(0, img_shape[ndim])
             start_cutout.append(delta_before)
-        
+
         # Creates rolling mask cutout
         mask_roll = np.zeros(img_shape).astype('float32')
 
-        indexes=[]
+        indexes = []
         for ndim in range(len(img_shape)):
             indexes.append(slice(0, int(size[ndim])))
         mask_roll[tuple(indexes)] = 1
@@ -265,22 +273,21 @@ class PartialCutOutTensor_Roll(object):
 
         # Determines part of the array inside and outside the cutout
         arr_inside = arr * mask_roll
-        arr_outside = arr * (1-mask_roll)
+        arr_outside = arr * (1 - mask_roll)
 
         # If self.from_skeleton == True:
         # This keeps the whole skeleton outside the cutout
         # and keeps only bottom value inside the cutout
         if self.from_skeleton:
-            arr_inside = arr_inside * (arr_inside==30)
-        
+            arr_inside = arr_inside * (arr_inside == 30)
+
         # If self.from_skeleton == False:
         # This keeps only bottom value outside the cutout
         # and keeps the whole skeleton inside the cutout
         else:
-            arr_outside = arr_outside * (arr_outside==30)
+            arr_outside = arr_outside * (arr_outside == 30)
 
         return torch.from_numpy(arr_inside + arr_outside)
-
 
 
 class CheckerboardTensor(object):
@@ -316,12 +323,15 @@ class CheckerboardTensor(object):
             start_cutout.append(delta_before)
 
         # Creates checkerboard mask
-        mask = checkerboard(img_shape, self.checkerboard_size).astype('float32')
+        mask = checkerboard(
+            img_shape,
+            self.checkerboard_size).astype('float32')
 
         for ndim in range(len(img_shape)):
             mask = np.roll(mask, start_cutout[ndim], axis=ndim)
 
-        return torch.from_numpy(arr*mask)
+        return torch.from_numpy(arr * mask)
+
 
 class PartialCutOutTensor(object):
     """Apply a cutout on the images and puts only bottom value inside the cutout
@@ -377,18 +387,19 @@ class PartialCutOutTensor(object):
         if self.from_skeleton:
             if self.inplace:
                 arr_cut = arr[tuple(indexes)]
-                arr[tuple(indexes)] = arr_cut * (arr_cut==30)
+                arr[tuple(indexes)] = arr_cut * (arr_cut == 30)
                 return torch.from_numpy(arr)
             else:
                 arr_copy = np.copy(arr)
                 arr_cut = arr_copy[tuple(indexes)]
-                arr_copy[tuple(indexes)] = arr_cut * (arr_cut==30)
+                arr_copy[tuple(indexes)] = arr_cut * (arr_cut == 30)
                 return torch.from_numpy(arr_copy)
         else:
-            arr_bottom = arr * (arr==30)
+            arr_bottom = arr * (arr == 30)
             arr_cut = arr[tuple(indexes)]
             arr_bottom[tuple(indexes)] = np.copy(arr_cut)
             return torch.from_numpy(arr_bottom)
+
 
 class CutoutTensor(object):
     """Apply a cutout on the images
@@ -427,7 +438,7 @@ class CutoutTensor(object):
                     0, img_shape[ndim] - size[ndim] + 1)
             indexes.append(slice(int(delta_before),
                                  int(delta_before + size[ndim])))
-            
+
         if self.inplace:
             arr[tuple(indexes)] = self.value
             return torch.from_numpy(arr)
@@ -505,4 +516,3 @@ class Transformer(object):
         for trf in self.transforms:
             s += '\n\t- ' + trf.__str__()
         return s
-

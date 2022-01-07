@@ -39,6 +39,7 @@ import json
 
 from matplotlib import pyplot as plt
 
+
 def parse_args(argv):
     """Parses command-line arguments
 
@@ -61,6 +62,7 @@ def parse_args(argv):
 
     return args
 
+
 def loop_over_directory(src_dir):
     """Loops over deep learning directories
     """
@@ -81,7 +83,12 @@ def loop_over_directory(src_dir):
 
     fig, ax1 = plt.subplots()
     color = 'tab:red'
-    ax1.plot(latent_space_size, val_loss, c=color, marker='o', label='Validation loss')
+    ax1.plot(
+        latent_space_size,
+        val_loss,
+        c=color,
+        marker='o',
+        label='Validation loss')
     ax1.set_xlabel('Latent space size')
     ax1.set_ylabel('Loss', color=color)
     ax1.tick_params(axis='y', labelcolor=color)
@@ -91,13 +98,19 @@ def loop_over_directory(src_dir):
 
     color = 'tab:blue'
     ax2.set_ylabel('Silhouette score', color=color)
-    ax2.plot(latent_space_size, AffinityPropagation, c=color, marker='o', label='Silhouette score')
+    ax2.plot(
+        latent_space_size,
+        AffinityPropagation,
+        c=color,
+        marker='o',
+        label='Silhouette score')
     ax2.tick_params(axis='y', labelcolor=color)
     ax2.legend(loc=0)
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.title("Convergence and clustering")
     plt.show()
+
 
 def main(argv):
     """Reads argument line and launches postprocessing_results on each
@@ -116,6 +129,7 @@ def main(argv):
         if exc.code != 0:
             six.reraise(*sys.exc_info())
 
+
 if __name__ == '__main__':
     # This permits to call main also from another python program
     # without having to make system calls
@@ -123,7 +137,3 @@ if __name__ == '__main__':
 
     # example of use
     # python3 plot_loss_silhouette_score.py -s ../../../Output/t-0.1
-
-
-
-

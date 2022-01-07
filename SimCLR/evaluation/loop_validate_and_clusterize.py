@@ -35,6 +35,7 @@ import glob
 import os
 import argparse
 
+
 def parse_args(argv):
     """Parses command-line arguments
 
@@ -57,6 +58,7 @@ def parse_args(argv):
 
     return args
 
+
 def loop_over_directory(src_dir):
     """Loops over deep learning directories
     """
@@ -65,7 +67,8 @@ def loop_over_directory(src_dir):
     for deep_dir in dirnames:
         deep_dir = os.path.abspath(deep_dir)
         analysis_path = f"{deep_dir}"
-        checkpoint_file = glob.glob(f"{deep_dir}/logs/default/version_0/checkpoints/*.ckpt")
+        checkpoint_file = glob.glob(
+            f"{deep_dir}/logs/default/version_0/checkpoints/*.ckpt")
         checkpoint_file = os.path.abspath(checkpoint_file[0])
         checkpoint_path = f"'\"{checkpoint_file}\"'"
         config_path = f"{deep_dir}/.hydra"
@@ -75,6 +78,7 @@ def loop_over_directory(src_dir):
             f"--config-path={config_path}"
         print(cmd)
         os.system(cmd)
+
 
 def main(argv):
     """Reads argument line and launches postprocessing_results on each
@@ -93,6 +97,7 @@ def main(argv):
         if exc.code != 0:
             six.reraise(*sys.exc_info())
 
+
 if __name__ == '__main__':
     # This permits to call main also from another python program
     # without having to make system calls
@@ -100,7 +105,3 @@ if __name__ == '__main__':
 
     # example of use
     # python3 analysis_each.py -s ../../../Output/t-0.1
-
-
-
-

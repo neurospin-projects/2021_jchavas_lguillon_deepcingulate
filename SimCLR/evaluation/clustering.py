@@ -27,37 +27,66 @@ def cluster():
 class Cluster():
 
     def __init__(self, X, root_dir):
-        self.n_clusters_list = [2, 3, 4,5,6,7,8,9,10]
+        self.n_clusters_list = [2, 3, 4, 5, 6, 7, 8, 9, 10]
         self.x = X
         self.dir = root_dir
 
     def plot_silhouette(self):
         """
         """
-        res_silhouette = {'kmeans':{2: 0, 3: 0, 4: 0, 5:0, 6:0, 7: 0, 8: 0, 9:0, 10: 0},
-                          'AffinityPropagation':{},
-                          'dbscan':{1:0, 2: 0, 3: 0, 4: 0, 5:0, 6:0, 7: 0, 8: 0, 9:0, 10: 0}}
+        res_silhouette = {
+            'kmeans': {
+                2: 0,
+                3: 0,
+                4: 0,
+                5: 0,
+                6: 0,
+                7: 0,
+                8: 0,
+                9: 0,
+                10: 0},
+            'AffinityPropagation': {},
+            'dbscan': {
+                1: 0,
+                2: 0,
+                3: 0,
+                4: 0,
+                5: 0,
+                6: 0,
+                7: 0,
+                8: 0,
+                9: 0,
+                10: 0}}
         for n in self.n_clusters_list:
-            cluster_labels= KMeans(n_clusters=n, random_state=0).fit_predict(self.x)
-            res_silhouette['kmeans'][n] = str(metrics.silhouette_score(self.x, cluster_labels))
+            cluster_labels = KMeans(
+                n_clusters=n,
+                random_state=0).fit_predict(
+                self.x)
+            res_silhouette['kmeans'][n] = str(
+                metrics.silhouette_score(
+                    self.x, cluster_labels))
 
             fig, ax1 = plt.subplots()
             # The (n_clusters+1)*10 is for inserting blank space between silhouette
             # plots of individual clusters, to demarcate them clearly.
             ax1.set_ylim([0, len(self.x) + (n + 1) * 10])
             silhouette_avg = silhouette_score(self.x, cluster_labels)
-            print("For n_clusters =", n, "The average silhouette_score with kmeans is :", silhouette_avg)
+            print(
+                "For n_clusters =",
+                n,
+                "The average silhouette_score with kmeans is :",
+                silhouette_avg)
 
             # Compute the silhouette scores for each sample
-            sample_silhouette_values = silhouette_samples(self.x, cluster_labels)
+            sample_silhouette_values = silhouette_samples(
+                self.x, cluster_labels)
 
             y_lower = 10
             for i in range(n):
                 # Aggregate the silhouette scores for samples belonging to
                 # cluster i, and sort them
-                ith_cluster_silhouette_values = sample_silhouette_values[cluster_labels == i]
-
-                ith_cluster_silhouette_values.sort()
+                ith_cluster_silhouette_values = sorted(
+                    sample_silhouette_values[cluster_labels == i])
 
                 size_cluster_i = ith_cluster_silhouette_values.shape[0]
                 y_upper = y_lower + size_cluster_i
@@ -72,7 +101,8 @@ class Cluster():
                     alpha=0.7,
                 )
 
-                # Label the silhouette plots with their cluster numbers at the middle
+                # Label the silhouette plots with their cluster numbers at the
+                # middle
                 ax1.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
 
                 # Compute the new y_lower for next plot
@@ -100,25 +130,30 @@ class Cluster():
             n_clusters_ = len(af.cluster_centers_indices_)
             print(n_clusters_)
 
-        if n_clusters_>1:
-            res_silhouette['AffinityPropagation'][n_clusters_] = str(metrics.silhouette_score(self.x, x_cluster_label))
+        if n_clusters_ > 1:
+            res_silhouette['AffinityPropagation'][n_clusters_] = str(
+                metrics.silhouette_score(self.x, x_cluster_label))
             fig2, ax2 = plt.subplots()
             # The (n_clusters+1)*10 is for inserting blank space between silhouette
             # plots of individual clusters, to demarcate them clearly.
             ax2.set_ylim([0, len(self.x) + (n_clusters_ + 1) * 10])
             silhouette_avg = silhouette_score(self.x, x_cluster_label)
-            print("For n_clusters =", n_clusters_, "The average silhouette_score with AffinityPropagation is :", silhouette_avg)
+            print(
+                "For n_clusters =",
+                n_clusters_,
+                "The average silhouette_score with AffinityPropagation is :",
+                silhouette_avg)
 
             # Compute the silhouette scores for each sample
-            sample_silhouette_values = silhouette_samples(self.x, cluster_labels)
+            sample_silhouette_values = silhouette_samples(
+                self.x, cluster_labels)
 
             y_lower = 10
             for i in range(n_clusters_):
                 # Aggregate the silhouette scores for samples belonging to
                 # cluster i, and sort them
-                ith_cluster_silhouette_values = sample_silhouette_values[cluster_labels == i]
-
-                ith_cluster_silhouette_values.sort()
+                ith_cluster_silhouette_values = sorted(
+                    sample_silhouette_values[cluster_labels == i])
 
                 size_cluster_i = ith_cluster_silhouette_values.shape[0]
                 y_upper = y_lower + size_cluster_i
@@ -133,7 +168,8 @@ class Cluster():
                     alpha=0.7,
                 )
 
-                # Label the silhouette plots with their cluster numbers at the middle
+                # Label the silhouette plots with their cluster numbers at the
+                # middle
                 ax2.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
 
                 # Compute the new y_lower for next plot
@@ -154,26 +190,31 @@ class Cluster():
         for idx, eps in enumerate(eps_list):
             cluster_labels = DBSCAN(eps=eps).fit_predict(self.x)
             # print(f"cluster labels = {cluster_labels}")
-            if not all([ label == 0 for label in cluster_labels ]):
-                res_silhouette['dbscan'][idx] = str(metrics.silhouette_score(self.x, cluster_labels))
+            if not all([label == 0 for label in cluster_labels]):
+                res_silhouette['dbscan'][idx] = str(
+                    metrics.silhouette_score(self.x, cluster_labels))
 
                 fig3, ax3 = plt.subplots()
                 # The (n_clusters+1)*10 is for inserting blank space between silhouette
                 # plots of individual clusters, to demarcate them clearly.
                 ax3.set_ylim([0, len(self.x) + (n_clusters_ + 1) * 10])
                 silhouette_avg = silhouette_score(self.x, x_cluster_label)
-                print("For eps =", eps, "The average silhouette_score with dbscan is :", silhouette_avg)
+                print(
+                    "For eps =",
+                    eps,
+                    "The average silhouette_score with dbscan is :",
+                    silhouette_avg)
 
                 # Compute the silhouette scores for each sample
-                sample_silhouette_values = silhouette_samples(self.x, cluster_labels)
+                sample_silhouette_values = silhouette_samples(
+                    self.x, cluster_labels)
 
                 y_lower = 10
                 for i in range(n_clusters_):
                     # Aggregate the silhouette scores for samples belonging to
                     # cluster i, and sort them
-                    ith_cluster_silhouette_values = sample_silhouette_values[cluster_labels == i]
-
-                    ith_cluster_silhouette_values.sort()
+                    ith_cluster_silhouette_values = sorted(
+                        sample_silhouette_values[cluster_labels == i])
 
                     size_cluster_i = ith_cluster_silhouette_values.shape[0]
                     y_upper = y_lower + size_cluster_i
@@ -188,7 +229,8 @@ class Cluster():
                         alpha=0.7,
                     )
 
-                    # Label the silhouette plots with their cluster numbers at the middle
+                    # Label the silhouette plots with their cluster numbers at
+                    # the middle
                     ax3.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
 
                     # Compute the new y_lower for next plot
@@ -198,7 +240,8 @@ class Cluster():
                 ax3.set_xlabel("The silhouette coefficient values")
                 ax3.set_ylabel("Cluster label")
 
-                # The vertical line for average silhouette score of all the values
+                # The vertical line for average silhouette score of all the
+                # values
                 ax3.axvline(x=silhouette_avg, color="red", linestyle="--")
 
                 ax3.set_yticks([])  # Clear the yaxis labels / ticks

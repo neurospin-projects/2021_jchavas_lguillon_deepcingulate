@@ -85,7 +85,7 @@ class ContrastiveLearner(DenseNet):
 
     def get_layers(self):
         for layer in self.modules():
-            if type(layer) == torch.nn.Linear:
+            if isinstance(layer, torch.nn.Linear):
                 handle = layer.register_forward_hook(self.save_output)
                 self.hook_handles.append(handle)
 
@@ -224,7 +224,7 @@ class ContrastiveLearner(DenseNet):
 
         tsne = TSNE(n_components=2, perplexity=5, init='pca', random_state=50)
 
-        Y= X.detach().numpy()
+        Y = X.detach().numpy()
 
         # Makes the t-SNE fit
         X_tsne = tsne.fit_transform(Y)
@@ -261,10 +261,12 @@ class ContrastiveLearner(DenseNet):
             'input_j', image_input_j, self.current_epoch)
 
         # Plots view using anatomist
-        image_input_i = self.visu_anatomist.plot_bucket(self.sample_i, buffer=True)
+        image_input_i = self.visu_anatomist.plot_bucket(
+            self.sample_i, buffer=True)
         self.logger.experiment.add_image(
             'input_ana_i', image_input_i, self.current_epoch)
-        image_input_j = self.visu_anatomist.plot_bucket(self.sample_j, buffer=True)
+        image_input_j = self.visu_anatomist.plot_bucket(
+            self.sample_j, buffer=True)
         self.logger.experiment.add_image(
             'input_ana_j', image_input_j, self.current_epoch)
 
@@ -320,14 +322,19 @@ class ContrastiveLearner(DenseNet):
 
         # Computes t-SNE
         if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 or self.current_epoch >= self.config.max_epochs:
-            X_tsne = self.compute_tsne(self.sample_data.val_dataloader(), "output")
+            X_tsne = self.compute_tsne(
+                self.sample_data.val_dataloader(), "output")
             image_TSNE = plot_tsne(X_tsne, buffer=True)
             self.logger.experiment.add_image(
                 'TSNE output validation image', image_TSNE, self.current_epoch)
-            X_tsne = self.compute_tsne(self.sample_data.val_dataloader(), "representation")
+            X_tsne = self.compute_tsne(
+                self.sample_data.val_dataloader(),
+                "representation")
             image_TSNE = plot_tsne(X_tsne, buffer=True)
             self.logger.experiment.add_image(
-                'TSNE representation validation image', image_TSNE, self.current_epoch)
+                'TSNE representation validation image',
+                image_TSNE,
+                self.current_epoch)
 
         # Plots one representation image
         # image_output = plot_output(

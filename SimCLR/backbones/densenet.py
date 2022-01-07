@@ -125,8 +125,8 @@ class DenseNet(pl.LightningModule):
             ('pool0', nn.MaxPool3d(kernel_size=3, stride=2, padding=1)),
         ]))
         self.mode = mode
-        self.num_representation_features=num_representation_features
-        self.num_outputs=num_outputs
+        self.num_representation_features = num_representation_features
+        self.num_outputs = num_outputs
         # Each denseblock
         num_features = num_init_features
         for i, num_layers in enumerate(block_config):
@@ -155,8 +155,8 @@ class DenseNet(pl.LightningModule):
             # Linear layer
             self.classifier = nn.Linear(num_features, num_classes)
         elif self.mode == "encoder":
-            self.hidden_representation = nn.Linear(num_features,
-                                                   self.num_representation_features)
+            self.hidden_representation = nn.Linear(
+                num_features, self.num_representation_features)
             self.head_projection = nn.Linear(self.num_representation_features,
                                              self.num_outputs)
 

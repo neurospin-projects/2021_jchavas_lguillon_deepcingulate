@@ -71,11 +71,11 @@ class DataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         loader_test = DataLoader(self.dataset_test,
-                                batch_size=self.config.batch_size,
-                                pin_memory=self.config.pin_mem,
-                                num_workers=self.config.num_cpu_workers,
-                                shuffle=False
-                                )
+                                 batch_size=self.config.batch_size,
+                                 pin_memory=self.config.pin_mem,
+                                 num_workers=self.config.num_cpu_workers,
+                                 shuffle=False
+                                 )
         return loader_test
 
 
@@ -90,7 +90,7 @@ class DataModule_Visualization(pl.LightningDataModule):
     def setup(self, stage, mode=None):
         self.dataset_train, self.dataset_val, self.dataset_test, self.dataset_train_val = create_sets(
             self.config, mode='visualization')
-        
+
     def train_val_dataloader(self):
         loader_train = DataLoader(self.dataset_train_val,
                                   batch_size=self.config.batch_size,
@@ -120,9 +120,9 @@ class DataModule_Visualization(pl.LightningDataModule):
 
     def test_dataloader(self):
         loader_test = DataLoader(self.dataset_test,
-                                batch_size=self.config.batch_size,
-                                pin_memory=self.config.pin_mem,
-                                num_workers=self.config.num_cpu_workers,
-                                shuffle=False
-                                )
+                                 batch_size=self.config.batch_size,
+                                 pin_memory=self.config.pin_mem,
+                                 num_workers=self.config.num_cpu_workers,
+                                 shuffle=False
+                                 )
         return loader_test
