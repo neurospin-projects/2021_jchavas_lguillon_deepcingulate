@@ -117,6 +117,9 @@ venv.bak/
 # vscode project settings
 .vscode
 
+# run folders
+SimCLR/runs
+
 # Rope project settings
 .ropeproject
 
