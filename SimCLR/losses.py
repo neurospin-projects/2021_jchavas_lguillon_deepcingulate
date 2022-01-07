@@ -78,7 +78,8 @@ def print_info(z_i, z_j, sim_zij, sim_zii, sim_zjj, temperature):
     # Prints quantiles of positive pairs (views from the same image)
     quantile_positive_pairs = diag_ij.quantile(0.75)
     print(
-        f"quantile of positives ij = {quantile_positive_pairs.cpu()*temperature*100}")
+        f"quantile of positives ij = "
+        f"{quantile_positive_pairs.cpu()*temperature*100}")
 
     # Computes quantiles of negative pairs
     quantile_negative_ii = quantile_off_diagonal(sim_zii)
@@ -87,11 +88,14 @@ def print_info(z_i, z_j, sim_zij, sim_zii, sim_zjj, temperature):
 
     # Prints quantiles of negative pairs
     print(
-        f"quantile of negatives ii = {quantile_negative_ii.cpu()*temperature*100}")
+        f"quantile of negatives ii = "
+        f"{quantile_negative_ii.cpu()*temperature*100}")
     print(
-        f"quantile of negatives jj = {quantile_negative_jj.cpu()*temperature*100}")
+        f"quantile of negatives jj = "
+        f"{quantile_negative_jj.cpu()*temperature*100}")
     print(
-        f"quantile of negatives ij = {quantile_negative_ij.cpu()*temperature*100}")
+        f"quantile of negatives ij = "
+        f"{quantile_negative_ij.cpu()*temperature*100}")
 
 
 class NTXenLoss(nn.Module):
@@ -181,7 +185,8 @@ class NTXenLoss_WithoutHardNegative(nn.Module):
         # Prints quantiles of positive pairs (views from the same image)
         quantile_positive_pairs = diag_ij.quantile(0.75)
         print(
-            f"quantile of positives ij = {quantile_positive_pairs.cpu()*self.temperature*100}")
+            f"quantile of positives ij = "
+            f"{quantile_positive_pairs.cpu()*self.temperature*100}")
 
         # Computes quantiles of negative pairs
         quantile_negative_ii = quantile_off_diagonal(sim_zii)
@@ -190,11 +195,14 @@ class NTXenLoss_WithoutHardNegative(nn.Module):
 
         # Prints quantiles of negative pairs
         print(
-            f"quantile of negatives ii = {quantile_negative_ii.cpu()*self.temperature*100}")
+            f"quantile of negatives ii = "
+            f"{quantile_negative_ii.cpu()*self.temperature*100}")
         print(
-            f"quantile of negatives jj = {quantile_negative_jj.cpu()*self.temperature*100}")
+            f"quantile of negatives jj = "
+            f"{quantile_negative_jj.cpu()*self.temperature*100}")
         print(
-            f"quantile of negatives ij = {quantile_negative_ij.cpu()*self.temperature*100}")
+            f"quantile of negatives ij = "
+            f"{quantile_negative_ij.cpu()*self.temperature*100}")
 
         # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
         sim_zii = sim_zii - self.INF * torch.eye(N, device=z_i.device)
@@ -474,7 +482,8 @@ class NTXenLoss_Mixed(nn.Module):
         # Prints quantiles of positive pairs (views from the same image)
         quantile_positive_pairs = diag_ij.quantile(0.75)
         print(
-            f"quantile of positives ij = {quantile_positive_pairs.cpu()*self.temperature*100}")
+            f"quantile of positives ij = "
+            f"{quantile_positive_pairs.cpu()*self.temperature*100}")
 
         # Computes quantiles of negative pairs
         quantile_negative_ii = quantile_off_diagonal(sim_zii)
@@ -483,11 +492,14 @@ class NTXenLoss_Mixed(nn.Module):
 
         # Prints quantiles of negative pairs
         print(
-            f"quantile of negatives ii = {quantile_negative_ii.cpu()*self.temperature*100}")
+            f"quantile of negatives ii = "
+            f"{quantile_negative_ii.cpu()*self.temperature*100}")
         print(
-            f"quantile of negatives jj = {quantile_negative_jj.cpu()*self.temperature*100}")
+            f"quantile of negatives jj = "
+            f"{quantile_negative_jj.cpu()*self.temperature*100}")
         print(
-            f"quantile of negatives ij = {quantile_negative_ij.cpu()*self.temperature*100}")
+            f"quantile of negatives ij = "
+            f"{quantile_negative_ij.cpu()*self.temperature*100}")
 
         # 'Remove' the diag terms by penalizing it (exp(-inf) = 0)
         sim_zii = sim_zii - self.INF * torch.eye(N, device=z_i.device)
@@ -531,7 +543,8 @@ class NTXenLoss_Mixed(nn.Module):
 
 class NTXenLoss_NearestNeighbours(nn.Module):
     """
-    Normalized Nearest Neighbour Temperature Cross-Entropy Loss for Constrastive Learning
+    Normalized Nearest Neighbour Temperature Cross-Entropy Loss
+    for Constrastive Learning
     Refer for instance to:
     Dwibedi et al, 2021
     With a little help from my friends nearest-neighbours

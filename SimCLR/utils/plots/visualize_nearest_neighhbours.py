@@ -11,7 +11,8 @@ from soma import aims
 
 from .visualize_anatomist import Visu_Anatomist
 
-"""Inspired from lightly https://docs.lightly.ai/tutorials/package/tutorial_simclr_clothing.html
+"""Inspired from lightly
+https://docs.lightly.ai/tutorials/package/tutorial_simclr_clothing.html
 """
 
 log = logging.getLogger(__name__)

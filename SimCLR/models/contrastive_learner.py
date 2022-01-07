@@ -228,13 +228,15 @@ class ContrastiveLearner(DenseNet):
         # Makes the t-SNE fit
         X_tsne = tsne.fit_transform(Y)
 
+        # Returns tsne embeddings
         return X_tsne
 
     def training_epoch_end(self, outputs):
         """Computation done at the end of the epoch"""
 
         # Computes t-SNE both in representation and output space
-        if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 or self.current_epoch >= self.config.max_epochs:
+        if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 \
+                or self.current_epoch >= self.config.max_epochs:
             X_tsne = self.compute_tsne(
                 self.sample_data.train_dataloader(), "output")
             image_TSNE = plot_tsne(X_tsne, buffer=True)
@@ -320,7 +322,8 @@ class ContrastiveLearner(DenseNet):
         """Computaion done at the end of each validation epoch"""
 
         # Computes t-SNE
-        if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 or self.current_epoch >= self.config.max_epochs:
+        if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 \
+                or self.current_epoch >= self.config.max_epochs:
             X_tsne = self.compute_tsne(
                 self.sample_data.val_dataloader(), "output")
             image_TSNE = plot_tsne(X_tsne, buffer=True)

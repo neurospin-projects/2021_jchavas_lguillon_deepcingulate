@@ -119,6 +119,9 @@ venv.bak/
 
 # run folders
 SimCLR/runs
+SimCLR/outputs
+SimCLR/evaluation/runs
+SimCLR/evaluation/outputs
 
 # Rope project settings
 .ropeproject

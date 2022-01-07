@@ -36,6 +36,7 @@
 Tools to create pytorch dataloaders
 """
 import logging
+import os
 
 import numpy as np
 import pandas as pd
@@ -104,7 +105,8 @@ class ContrastiveDataset():
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            PartialCutOutTensor_Roll(from_skeleton=True, patch_size=self.config.patch_size),
+            PartialCutOutTensor_Roll(from_skeleton=True,
+                                     patch_size=self.config.patch_size),
             RotateTensor(max_angle=self.config.max_angle),
             BinarizeTensor()
         ])
@@ -115,7 +117,8 @@ class ContrastiveDataset():
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            PartialCutOutTensor_Roll(from_skeleton=False, patch_size=self.config.patch_size),
+            PartialCutOutTensor_Roll(from_skeleton=False,
+                                     patch_size=self.config.patch_size),
             RotateTensor(max_angle=self.config.max_angle),
             BinarizeTensor()
         ])
@@ -178,7 +181,8 @@ class ContrastiveDataset_Visualization():
         #     SimplifyTensor(),
         #     PaddingTensor(self.config.input_size,
         #                   fill_value=self.config.fill_value),
-        #     PartialCutOutTensor_Roll(from_skeleton=True, patch_size=self.config.patch_size),
+        #     PartialCutOutTensor_Roll(from_skeleton=True,
+        #                              patch_size=self.config.patch_size),
         #     RotateTensor(max_angle=self.config.max_angle),
         #     BinarizeTensor()
         # ])
@@ -189,7 +193,8 @@ class ContrastiveDataset_Visualization():
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            PartialCutOutTensor_Roll(from_skeleton=False, patch_size=self.config.patch_size),
+            PartialCutOutTensor_Roll(from_skeleton=False,
+                                     patch_size=self.config.patch_size),
             RotateTensor(max_angle=self.config.max_angle),
             BinarizeTensor()
         ])
@@ -215,6 +220,7 @@ def create_sets(config, mode='training'):
 
     # Loads crops from all subjects
     pickle_file_path = config.pickle_normal
+    log.info("Current directory = " + os.getcwd())
     normal_data = pd.read_pickle(pickle_file_path)
     normal_subjects = normal_data.columns.tolist()
 
@@ -240,7 +246,8 @@ def create_sets(config, mode='training'):
             normal_data[normal_data.columns.intersection(normal_test_subjects)]
         benchmark_test_subjects = test_subjects[round(len_test / 2):]
         benchmark_test_data = \
-            benchmark_data[benchmark_data.columns.intersection(benchmark_test_subjects)]
+            benchmark_data[
+                benchmark_data.columns.intersection(benchmark_test_subjects)]
 
         test_data = pd.concat(
             [normal_test_data, benchmark_test_data], axis=1, ignore_index=True)
@@ -262,14 +269,16 @@ def create_sets(config, mode='training'):
     if config.pickle_benchmark:
         normal_train_val_subjects = train_val_subjects[:round(
             len(train_val_subjects) / 2)]
-        normal_train_val_data = \
-            normal_data[normal_data.columns.intersection(normal_train_val_subjects)]
-        benchmark_train_val_subjects = train_val_subjects[round(
-            len(train_val_subjects) / 2):]
-        benchmark_train_val_data = benchmark_data[benchmark_data.columns.intersection(
-            benchmark_train_val_subjects)]
+        normal_train_val_data = normal_data[
+            normal_data.columns.intersection(normal_train_val_subjects)]
+        benchmark_train_val_subjects = train_val_subjects[
+            round(len(train_val_subjects) / 2):]
+        benchmark_train_val_data = benchmark_data[
+            benchmark_data.columns.intersection(benchmark_train_val_subjects)]
         train_val_data = pd.concat(
-            [normal_train_val_data, benchmark_train_val_data], axis=1, ignore_index=True)
+            [normal_train_val_data, benchmark_train_val_data],
+            axis=1,
+            ignore_index=True)
     else:
         train_val_data = normal_data[normal_data.columns.intersection(
             train_val_subjects)]

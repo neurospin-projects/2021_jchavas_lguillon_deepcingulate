@@ -32,7 +32,6 @@ as a function of latent space size
 import argparse
 import glob
 import json
-import os
 import sys
 
 import six

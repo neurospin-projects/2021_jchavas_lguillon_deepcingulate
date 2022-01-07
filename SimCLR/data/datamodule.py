@@ -49,8 +49,8 @@ class DataModule(pl.LightningDataModule):
         self.config = config
 
     def setup(self, stage=None, mode=None):
-        self.dataset_train, self.dataset_val, self.dataset_test, _ = create_sets(
-            self.config)
+        self.dataset_train, self.dataset_val, self.dataset_test, _ = \
+            create_sets(self.config)
 
     def train_dataloader(self):
         loader_train = DataLoader(self.dataset_train,
@@ -81,7 +81,7 @@ class DataModule(pl.LightningDataModule):
 
 
 class DataModule_Visualization(pl.LightningDataModule):
-    """Data module class
+    """Data module class for visualization
     """
 
     def __init__(self, config):
@@ -89,8 +89,9 @@ class DataModule_Visualization(pl.LightningDataModule):
         self.config = config
 
     def setup(self, stage, mode=None):
-        self.dataset_train, self.dataset_val, self.dataset_test, self.dataset_train_val = create_sets(
-            self.config, mode='visualization')
+        self.dataset_train, self.dataset_val, self.dataset_test,\
+            self.dataset_train_val = \
+            create_sets(self.config, mode='visualization')
 
     def train_val_dataloader(self):
         loader_train = DataLoader(self.dataset_train_val,

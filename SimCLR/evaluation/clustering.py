@@ -6,8 +6,6 @@ import json
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import torch
 from sklearn import metrics
 from sklearn.cluster import AffinityPropagation
 from sklearn.cluster import DBSCAN
@@ -16,14 +14,6 @@ from sklearn.cluster import SpectralClustering
 from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_samples
 from sklearn.metrics import silhouette_score
-#from preprocessing import create_aims_set
-#from postprocessing import load_data_test
-
-
-def cluster():
-    """
-
-    """
 
 
 class Cluster():
@@ -69,8 +59,9 @@ class Cluster():
                     self.x, cluster_labels))
 
             fig, ax1 = plt.subplots()
-            # The (n_clusters+1)*10 is for inserting blank space between silhouette
-            # plots of individual clusters, to demarcate them clearly.
+            # The (n_clusters+1)*10 is for inserting blank space
+            # between silhouette plots of individual clusters,
+            # to demarcate them clearly.
             ax1.set_ylim([0, len(self.x) + (n + 1) * 10])
             silhouette_avg = silhouette_score(self.x, cluster_labels)
             print(
@@ -90,7 +81,7 @@ class Cluster():
                 ith_cluster_silhouette_values = sorted(
                     sample_silhouette_values[cluster_labels == i])
 
-                size_cluster_i = ith_cluster_silhouette_values.shape[0]
+                size_cluster_i = len(ith_cluster_silhouette_values)
                 y_upper = y_lower + size_cluster_i
 
                 color = cm.nipy_spectral(float(i) / n)
@@ -136,8 +127,9 @@ class Cluster():
             res_silhouette['AffinityPropagation'][n_clusters_] = str(
                 metrics.silhouette_score(self.x, x_cluster_label))
             fig2, ax2 = plt.subplots()
-            # The (n_clusters+1)*10 is for inserting blank space between silhouette
-            # plots of individual clusters, to demarcate them clearly.
+            # The (n_clusters+1)*10 is for inserting blank space
+            # between silhouette plots of individual clusters,
+            # to demarcate them clearly.
             ax2.set_ylim([0, len(self.x) + (n_clusters_ + 1) * 10])
             silhouette_avg = silhouette_score(self.x, x_cluster_label)
             print(
@@ -157,7 +149,7 @@ class Cluster():
                 ith_cluster_silhouette_values = sorted(
                     sample_silhouette_values[cluster_labels == i])
 
-                size_cluster_i = ith_cluster_silhouette_values.shape[0]
+                size_cluster_i = len(ith_cluster_silhouette_values)
                 y_upper = y_lower + size_cluster_i
 
                 color = cm.nipy_spectral(float(i) / n)
@@ -197,8 +189,9 @@ class Cluster():
                     metrics.silhouette_score(self.x, cluster_labels))
 
                 fig3, ax3 = plt.subplots()
-                # The (n_clusters+1)*10 is for inserting blank space between silhouette
-                # plots of individual clusters, to demarcate them clearly.
+                # The (n_clusters+1)*10 is for inserting blank space
+                # between silhouette plots of individual clusters,
+                # to demarcate them clearly.
                 ax3.set_ylim([0, len(self.x) + (n_clusters_ + 1) * 10])
                 silhouette_avg = silhouette_score(self.x, x_cluster_label)
                 print(
@@ -218,7 +211,7 @@ class Cluster():
                     ith_cluster_silhouette_values = sorted(
                         sample_silhouette_values[cluster_labels == i])
 
-                    size_cluster_i = ith_cluster_silhouette_values.shape[0]
+                    size_cluster_i = len(ith_cluster_silhouette_values)
                     y_upper = y_lower + size_cluster_i
 
                     color = cm.nipy_spectral(float(i) / n)

@@ -41,9 +41,9 @@ from scipy.ndimage import rotate
 from sklearn.preprocessing import OneHotEncoder
 
 
-def rotate_list(l):
+def rotate_list(l_list):
     "Rotates list by -1"
-    return l[1:] + l[:1]
+    return l_list[1:] + l_list[:1]
 
 
 def checkerboard(shape, tile_size):
@@ -211,7 +211,8 @@ class RotateTensor(object):
 
 
 class PartialCutOutTensor_Roll(object):
-    """Apply a rolling cutout on the images and puts only bottom value inside the cutout
+    """Apply a rolling cutout on the images and puts only bottom value
+    inside the cutout
     cf. Improved Regularization of Convolutional Neural Networks with Cutout,
     arXiv, 2017
     We assume that the rectangle to be cut is inside the image.
@@ -221,15 +222,16 @@ class PartialCutOutTensor_Roll(object):
                  localization=None):
         """[summary]
 
-        If from_skeleton==True, takes skeleton image, cuts it out and fills with bottom_only image
-        If from_skeleton==False, takes bottom_only image, cuts it out and fills with skeleton image
+            takes skeleton image, cuts it out and fills with bottom_only image
+        If from_skeleton==False,
+            takes bottom_only image, cuts it out and fills with skeleton image
 
         Args:
-            from_skeleton (bool, optional): [description]. Defaults to True.
-            patch_size (either int or list of int): [description]. Defaults to None.
-            random_size (bool, optional): [description]. Defaults to False.
-            inplace (bool, optional): [description]. Defaults to False.
-            localization ([type], optional): [description]. Defaults to None.
+            from_skeleton (bool, optional): Defaults to True.
+            patch_size (either int or list of int): Defaults to None.
+            random_size (bool, optional): Defaults to False.
+            inplace (bool, optional): Defaults to False.
+            localization ([type], optional): Defaults to None.
         """
         self.patch_size = rotate_list(patch_size)
         self.random_size = random_size
@@ -333,7 +335,7 @@ class CheckerboardTensor(object):
 
 
 class PartialCutOutTensor(object):
-    """Apply a cutout on the images and puts only bottom value inside the cutout
+    """Apply a cutout on the images and puts only bottom value inside
     cf. Improved Regularization of Convolutional Neural Networks with Cutout,
     arXiv, 2017
     We assume that the rectangle to be cut is inside the image.
@@ -343,15 +345,17 @@ class PartialCutOutTensor(object):
                  inplace=False, localization=None):
         """[summary]
 
-        If from_skeleton==True, takes skeleton image, cuts it out and fills with bottom_only image
-        If from_skeleton==False, takes bottom_only image, cuts it out and fills with skeleton image
+        If from_skeleton==True,
+            takes skeleton image, cuts it out and fills with bottom_only image
+        If from_skeleton==False,
+            takes bottom_only image, cuts it out and fills with skeleton image
 
         Args:
-            from_skeleton (bool, optional): [description]. Defaults to True.
-            patch_size (either int or list of int): [description]. Defaults to None.
-            random_size (bool, optional): [description]. Defaults to False.
-            inplace (bool, optional): [description]. Defaults to False.
-            localization ([type], optional): [description]. Defaults to None.
+            from_skeleton (bool, optional): Defaults to True.
+            patch_size (either int or list of int): Defaults to None.
+            random_size (bool, optional): Defaults to False.
+            inplace (bool, optional): Defaults to False.
+            localization ([type], optional): Defaults to None.
         """
         self.patch_size = rotate_list(patch_size)
         self.random_size = random_size
