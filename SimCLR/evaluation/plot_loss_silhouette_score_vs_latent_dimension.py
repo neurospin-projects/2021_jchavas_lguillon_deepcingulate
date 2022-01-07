@@ -25,18 +25,17 @@
 # that may mean  that it is complicated to manipulate,  and  that  also
 # requirements in conditions enabling the security of their systems and/or
 # data to be ensured and,  more generally, to use and operate it in the
-
 """
 This program plots the evolution of the loss and the silhouette score
 as a function of latent space size
 """
-import six
-import sys
-import glob
-import os
 import argparse
+import glob
 import json
+import os
+import sys
 
+import six
 from matplotlib import pyplot as plt
 
 

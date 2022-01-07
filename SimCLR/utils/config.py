@@ -36,7 +36,8 @@ import logging
 import os
 
 import omegaconf
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import DictConfig
+from omegaconf import OmegaConf
 log = logging.getLogger(__name__)
 
 

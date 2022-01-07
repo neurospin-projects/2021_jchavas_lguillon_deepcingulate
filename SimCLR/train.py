@@ -42,17 +42,17 @@ import logging
 
 import hydra
 import pytorch_lightning as pl
-from SimCLR.models.contrastive_learner import ContrastiveLearner
-from SimCLR.data.datamodule import DataModule
-from SimCLR.utils.config import process_config
-from SimCLR.utils.plots.visualize_images import plot_output
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.utilities.seed import seed_everything
+from soma.qt_gui.qt_backend import Qt
+from toolz.itertoolz import first
 from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 
-from soma.qt_gui.qt_backend import Qt
-from toolz.itertoolz import first
+from SimCLR.data.datamodule import DataModule
+from SimCLR.models.contrastive_learner import ContrastiveLearner
+from SimCLR.utils.config import process_config
+from SimCLR.utils.plots.visualize_images import plot_output
 
 tb_logger = pl_loggers.TensorBoardLogger('logs')
 writer = SummaryWriter()

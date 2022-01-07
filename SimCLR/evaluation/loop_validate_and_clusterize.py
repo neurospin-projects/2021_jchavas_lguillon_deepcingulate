@@ -25,15 +25,15 @@
 # that may mean  that it is complicated to manipulate,  and  that  also
 # requirements in conditions enabling the security of their systems and/or
 # data to be ensured and,  more generally, to use and operate it in the
-
 """
 This program launches postprocessing_results for each training subfolder
 """
-import six
-import sys
+import argparse
 import glob
 import os
-import argparse
+import sys
+
+import six
 
 
 def parse_args(argv):

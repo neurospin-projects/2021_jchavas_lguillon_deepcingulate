@@ -32,13 +32,14 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license version 2 and that you accept its terms.
-
-import PIL
 import logging
+
 import matplotlib.pyplot as plt
+import PIL
 from torchvision.transforms import ToTensor
 
 logger = logging.getLogger(__name__)
+
 
 def buffer_to_image(buffer):
     """Transforms IO buffer into PNG image"""
@@ -47,8 +48,9 @@ def buffer_to_image(buffer):
     buffer.seek(0)
     plt.close('all')
     image = PIL.Image.open(buffer)
-    image = ToTensor()(image).unsqueeze(0)[0] 
+    image = ToTensor()(image).unsqueeze(0)[0]
     return image
+
 
 def prime_factors(n):
     i = 2

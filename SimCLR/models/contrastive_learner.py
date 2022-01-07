@@ -37,19 +37,18 @@ Some helper functions are taken from:
 https://learnopencv.com/tensorboard-with-pytorch-lightning
 
 """
-
-import torch
 import numpy as np
-from SimCLR.losses import NTXenLoss
-from SimCLR.backbones.densenet import DenseNet
+import torch
 from sklearn.manifold import TSNE
+from toolz.itertoolz import first
+from toolz.itertoolz import last
 
-from SimCLR.utils.plots.visualize_tsne import plot_tsne
+from SimCLR.backbones.densenet import DenseNet
+from SimCLR.losses import NTXenLoss
+from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
 from SimCLR.utils.plots.visualize_images import plot_bucket
 from SimCLR.utils.plots.visualize_images import plot_histogram
-from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
-
-from toolz.itertoolz import last, first
+from SimCLR.utils.plots.visualize_tsne import plot_tsne
 
 
 class SaveOutput:

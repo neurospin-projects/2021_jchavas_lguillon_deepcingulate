@@ -25,21 +25,23 @@
 # that may mean  that it is complicated to manipulate,  and  that  also
 # requirements in conditions enabling the security of their systems and/or
 # data to be ensured and,  more generally, to use and operate it in the
-import logging
+from deep_folding.anatomist_tools.utils import remove_hull
+import anatomist.headless as anatomist
+from soma import aims
 import io
-from numpy import int16
+import logging
+
 import matplotlib.pyplot as plt
+from numpy import int16
 
 from .visu_utils import buffer_to_image
 
 logger = logging.getLogger(__name__)
 
-from soma import aims
-import anatomist.headless as anatomist
-from deep_folding.anatomist_tools.utils import remove_hull
 
 a = None
 win = None
+
 
 class Visu_Anatomist:
 
@@ -68,9 +70,9 @@ class Visu_Anatomist:
         view_quaternion = [0.4, 0.4, 0.5, 0.5]
         win.camera(view_quaternion=view_quaternion)
         win.imshow(show=False)
-        
+
         if buffer:
             win.removeObjects(bucket_a)
-            return buffer_to_image(buffer = io.BytesIO())
+            return buffer_to_image(buffer=io.BytesIO())
         else:
             plt.show()

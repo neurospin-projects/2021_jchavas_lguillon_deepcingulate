@@ -38,34 +38,35 @@
 ######################################################################
 # Imports and global variables definitions
 ######################################################################
+import json
 import logging
+import os
 
 import hydra
-import os
-import torch
-from omegaconf import DictConfig, OmegaConf
-import pytorch_lightning as pl
-from SimCLR.models.contrastive_learner import ContrastiveLearner
-from SimCLR.models.contrastive_learner_visualization import ContrastiveLearner_Visualization
-from SimCLR.data.datamodule import DataModule
-from SimCLR.data.datamodule import DataModule_Visualization
-from SimCLR.utils import process_config
-from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.utilities.seed import seed_everything
-from torch.utils.tensorboard import SummaryWriter
-from torchsummary import summary
 import matplotlib.pyplot as plt
 import numpy as np
-import json
-from sklearn.cluster import KMeans
-from sklearn.cluster import DBSCAN
+import pytorch_lightning as pl
+import torch
+from omegaconf import DictConfig
+from omegaconf import OmegaConf
+from pytorch_lightning import loggers as pl_loggers
+from pytorch_lightning.utilities.seed import seed_everything
 from sklearn.cluster import AffinityPropagation
-# from sklearn.cluster import OPTICS
+from sklearn.cluster import DBSCAN
+from sklearn.cluster import KMeans
+from torch.utils.tensorboard import SummaryWriter
+from torchsummary import summary
 
-from SimCLR.utils.plots.visualize_tsne import plot_tsne
-from SimCLR.utils.plots.visualize_nearest_neighhbours import plot_knn_examples
-from SimCLR.utils.plots.visualize_nearest_neighhbours import plot_knn_buckets
+from SimCLR.data.datamodule import DataModule
+from SimCLR.data.datamodule import DataModule_Visualization
 from SimCLR.evaluation.clustering import Cluster
+from SimCLR.models.contrastive_learner import ContrastiveLearner
+from SimCLR.models.contrastive_learner_visualization import ContrastiveLearner_Visualization
+from SimCLR.utils import process_config
+from SimCLR.utils.plots.visualize_nearest_neighhbours import plot_knn_buckets
+from SimCLR.utils.plots.visualize_nearest_neighhbours import plot_knn_examples
+from SimCLR.utils.plots.visualize_tsne import plot_tsne
+# from sklearn.cluster import OPTICS
 
 tb_logger = pl_loggers.TensorBoardLogger('logs')
 writer = SummaryWriter()

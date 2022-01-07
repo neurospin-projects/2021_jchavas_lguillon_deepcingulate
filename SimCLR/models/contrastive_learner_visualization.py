@@ -35,15 +35,11 @@
 """
 A test to just analyze randomly generated input images
 """
-
 import torch
+
 from SimCLR.losses import NTXenLoss
-from SimCLR.backbones.densenet import DenseNet
 from SimCLR.models.contrastive_learner import ContrastiveLearner
-
 from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
-
-from toolz.itertoolz import last, first
 
 
 class ContrastiveLearner_Visualization(ContrastiveLearner):

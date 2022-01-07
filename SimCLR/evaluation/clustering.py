@@ -1,21 +1,23 @@
 # -*- coding: utf-8 -*-
 # /usr/bin/env python3
-
 # Imports
-import torch
-import pandas as pd
-#from preprocessing import create_aims_set
-from sklearn import metrics
-from sklearn.manifold import TSNE
-from sklearn.cluster import KMeans, SpectralClustering, AffinityPropagation
-from sklearn.cluster import DBSCAN
-from sklearn.metrics import silhouette_samples, silhouette_score
-#from postprocessing import load_data_test
 import json
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import torch
+from sklearn import metrics
+from sklearn.cluster import AffinityPropagation
+from sklearn.cluster import DBSCAN
+from sklearn.cluster import KMeans
+from sklearn.cluster import SpectralClustering
+from sklearn.manifold import TSNE
+from sklearn.metrics import silhouette_samples
+from sklearn.metrics import silhouette_score
+#from preprocessing import create_aims_set
+#from postprocessing import load_data_test
 
 
 def cluster():

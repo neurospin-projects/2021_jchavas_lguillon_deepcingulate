@@ -32,15 +32,16 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license version 2 and that you accept its terms.
-
+import io
 import logging
+
 import matplotlib
+import matplotlib.markers as mmarkers
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import matplotlib.markers as mmarkers
 from sklearn.manifold import TSNE
-import io
+
 from .visu_utils import buffer_to_image
 
 logger = logging.getLogger(__name__)
@@ -106,15 +107,14 @@ def plot_tsne(X_tsne, buffer, labels=None, savepath=None, type=""):
         c = np.tile(np.array(["b", "r"]), nb_points // 2)
     else:
         c = labels
-        
+
     mscatter(X_tsne[:, 0], X_tsne[:, 1], c=c, m=m, s=8, ax=ax)
 
     if buffer:
-        return buffer_to_image(buffer = io.BytesIO())
+        return buffer_to_image(buffer=io.BytesIO())
     elif savepath:
         plt.savefig(f"{savepath}/tsne_{type}.png")
     else:
         plt.ion()
         plt.show()
         plt.pause(0.001)
-       

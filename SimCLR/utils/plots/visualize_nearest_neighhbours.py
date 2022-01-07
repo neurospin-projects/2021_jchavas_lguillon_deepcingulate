@@ -1,14 +1,15 @@
+import colorado as cld
 import logging
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.neighbors import NearestNeighbors
 
 import anatomist.api as anatomist
-from soma import aims
-import colorado as cld
-from .visualize_anatomist import Visu_Anatomist
+import matplotlib.pyplot as plt
+import numpy as np
 import PIL
 import torch
+from sklearn.neighbors import NearestNeighbors
+from soma import aims
+
+from .visualize_anatomist import Visu_Anatomist
 
 """Inspired from lightly https://docs.lightly.ai/tutorials/package/tutorial_simclr_clothing.html
 """
@@ -16,23 +17,33 @@ import torch
 log = logging.getLogger(__name__)
 visu_anatomist = None
 
+
 def get_image_as_np_array(filename: str):
     """Returns an image as an numpy array
     """
     img = PIL.Image.open(filename)
     return np.asarray(img)
 
+
 def get_input(dataset, filenames, idx):
     """gets input numbered idx"""
-    
-    (views, filename) = dataset[idx//2]
+
+    (views, filename) = dataset[idx // 2]
     if filenames:
         if filename != filenames[idx]:
-            log.error("filenames dont match: {} != {}".format(filename, filenames[idx]))
-    return views[idx%2]
+            log.error(
+                "filenames dont match: {} != {}".format(
+                    filename, filenames[idx]))
+    return views[idx % 2]
 
 
-def plot_knn_examples(embeddings, dataset, filenames=None, n_neighbors=3, num_examples=6, savepath=None):
+def plot_knn_examples(
+        embeddings,
+        dataset,
+        filenames=None,
+        n_neighbors=3,
+        num_examples=6,
+        savepath=None):
     """Plots multiple rows of random images with their nearest neighbors
     """
     # lets look at the nearest neighbors for some samples
@@ -54,21 +65,26 @@ def plot_knn_examples(embeddings, dataset, filenames=None, n_neighbors=3, num_ex
             # Recovers input
             view = get_input(dataset, filenames, neighbor_idx)
             # plot the image
-            plt.imshow(view[0,view.shape[1]//2, :, :].numpy())
+            plt.imshow(view[0, view.shape[1] // 2, :, :].numpy())
             # set the title to the distance of the neighbor
             ax.set_title(f'd={distances[idx][plot_x_offset]:.3f}')
             # let's disable the axis
             plt.axis('off')
             if savepath:
                 plt.savefig(f"{savepath}/nearest_neighbours_{idx}.png")
-    
+
     if not savepath:
         plt.ion()
         plt.show()
         plt.pause(0.001)
-    
-   
-def plot_knn_buckets(embeddings, dataset, filenames=None, n_neighbors=3, num_examples=6):
+
+
+def plot_knn_buckets(
+        embeddings,
+        dataset,
+        filenames=None,
+        n_neighbors=3,
+        num_examples=6):
     """Plots multiple rows of random images with their nearest neighbors
     """
     # lets look at the nearest neighbors for some samples
@@ -83,14 +99,13 @@ def plot_knn_buckets(embeddings, dataset, filenames=None, n_neighbors=3, num_exa
     # Converts from tensor to aims volume
     arr = view.numpy()
     arr = np.reshape(arr, (1,) + arr.shape).astype(np.int16)
-    if visu_anatomist == None:
+    if visu_anatomist is None:
         visu_anatomist = Visu_Anatomist()
     log.info(f"shape = {arr.shape}")
     visu_anatomist.plot_bucket(torch.from_numpy(arr),
                                buffer=False)
 
     # block = a.AWindowsBlock(a, n_neighbors)
-    
 
     # # loop through our randomly picked samples
     # for idx in samples_idx:
@@ -106,6 +121,7 @@ def plot_knn_buckets(embeddings, dataset, filenames=None, n_neighbors=3, num_exa
     #         ax.set_title(f'd={distances[idx][plot_x_offset]:.3f}')
     #         # let's disable the axis
     #         plt.axis('off')            win.imshow(show=False)
+
 
 if __name__ == "__main__":
     n_samples = 20
