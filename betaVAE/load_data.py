@@ -39,34 +39,26 @@ Tools in order to create pytorch dataloaders
 import os
 import sys
 
-p = os.path.abspath('../')
-if p not in sys.path:
-    sys.path.append(p)
-
 import pandas as pd
 import numpy as np
 from preprocess import *
 
-subject_dir = "/neurospin/dico/data/deep_folding/current/"
-data_dir = "/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/centered_combined/hcp/"
 
-
-def create_subset(idx_subset=1):
+def create_subset(config):
     """
     Creates dataset HCP_1 from HCP data
 
     Args:
-        idx_subset: int, value of subset to create (1 or 2)
+        config: instance of class Config
 
     Returns:
         subset: Dataset corresponding to HCP_1
     """
-    train_list = pd.read_csv(os.path.join(subject_dir,
-                             f"HCP_half_{idx_subset}bis.csv"), header=None,
-                             usecols=[0], names=['subjects'])
+    train_list = pd.read_csv(config.subject_dir, header=None, usecols=[0],
+                             names=['subjects'])
     train_list['subjects'] = train_list['subjects'].astype('str')
 
-    tmp = pd.read_pickle(os.path.join(data_dir, "Rskeleton.pkl")).T
+    tmp = pd.read_pickle(os.path.join(config.data_dir, "Rskeleton.pkl")).T
     tmp.index.astype('str')
 
     tmp = tmp.merge(train_list, left_on = tmp.index, right_on='subjects', how='right')
