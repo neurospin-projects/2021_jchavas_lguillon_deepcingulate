@@ -1,5 +1,4 @@
-# Training of the Beta VAE
-----------------------------
+# Training of the beta-VAE
 
 ## Configuration
 First, you need to update `config.py` with:
