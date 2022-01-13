@@ -8,6 +8,7 @@ class Config:
         self.lr = 2e-4
         self.in_shape = (1, 20, 40, 40) # input size with padding
         #self.data_dir = "/path/to/data/directory"
+        #self.subject_dir = "/path/to/list_of_subjects"
         #self.save_dir = "/path/to/saving/directory"
         self.save_dir = "/neurospin/dico/lguillon/midl_22/test/"
         self.data_dir = "/neurospin/dico/data/deep_folding/current/crops/CINGULATE/mask/sulcus_based/2mm/centered_combined/hcp/"
