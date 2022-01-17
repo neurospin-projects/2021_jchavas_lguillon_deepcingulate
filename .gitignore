@@ -114,6 +114,15 @@ venv.bak/
 .spyderproject
 .spyproject
 
+# vscode project settings
+.vscode
+
+# run folders
+SimCLR/runs
+SimCLR/outputs
+SimCLR/evaluation/runs
+SimCLR/evaluation/outputs
+
 # Rope project settings
 .ropeproject
 
