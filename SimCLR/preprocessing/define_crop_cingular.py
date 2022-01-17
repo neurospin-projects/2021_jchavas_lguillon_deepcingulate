@@ -39,8 +39,6 @@
 # It permits to easily regenerate the bounding boxes and masks
 
 # Imports
-import glob
-from os import rename
 from os.path import abspath
 from deep_folding.anatomist_tools import crop_definition
 
@@ -57,8 +55,7 @@ number_subjects = -1 #0 is for testing, -1 means all subjects
 
 # Defines the command line parameters for crop_definition
 # The paracingular sulcus is defined as F.C.M.ant. in the Tissier database
-args = "-s /neurospin/lnao/Panabase/lborne/data/ACCpatterns/tissier_2018/subjects "\
-       "-p t1mri/default_acquisition/default_analysis/folds/3.1/default_session_manual "\
+args = "-s /neurospin/dico/data/bv_databases/human/pclean/all "\
        f"-t {bbox_dir} "\
        f"-m {mask_dir} "\
        f"-u {sulcus_name} "\
@@ -77,17 +74,3 @@ print("")
 # Defines the mask and the crops
 # and writes the result in bbox_dir and mask_dir
 crop_definition.main(argv)
-
-"""
-We now rename the resulting F.C.M.ant.* files
-into paracingular.* files,
-as the naming in th Tissier database differs
-from the traditional brainvisa one
-"""
-files = glob.glob(f"{bbox_dir}/R/*.*")
-for f in files:
-    rename(f, f.replace(sulcus_name, "paracingular."))
-
-files = glob.glob(f"{mask_dir}/R/*.*")
-for f in files:
-    rename(f, f.replace(sulcus_name, "paracingular."))
