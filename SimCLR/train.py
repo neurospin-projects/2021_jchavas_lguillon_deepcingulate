@@ -41,19 +41,15 @@
 import logging
 
 import hydra
-import torch
 import pytorch_lightning as pl
-from SimCLR.contrastive_learner import ContrastiveLearner
-from SimCLR.datamodule import DataModule
-from SimCLR.utils import process_config
-from SimCLR.postprocessing.visualize_images import plot_output
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 
-from soma.qt_gui.qt_backend import Qt
-from toolz.itertoolz import first
+from SimCLR.data.datamodule import DataModule
+from SimCLR.models.contrastive_learner import ContrastiveLearner
+from SimCLR.utils.config import process_config
 
 tb_logger = pl_loggers.TensorBoardLogger('logs')
 writer = SummaryWriter()
@@ -67,7 +63,8 @@ We use the following definitions:
   The elements are called output vectors
 """
 
-@hydra.main(config_name='config', config_path="config")
+
+@hydra.main(config_name='config', config_path="configs")
 def train(config):
     config = process_config(config)
 
