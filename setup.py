@@ -28,7 +28,7 @@ setup(
                       'toolz',
                       'deep_folding @ \
                         git+https://git@github.com/neurospin/deep_folding',
-            ],
+                      ],
     url='https://github.com/neurospin-projects/2021_jchavas_lguillon_deepcingulate',
     author='Joël Chavas, Louise Guillon',
     author_email='joel.chavas@cea.fr, louise.guillon@cea.fr'
