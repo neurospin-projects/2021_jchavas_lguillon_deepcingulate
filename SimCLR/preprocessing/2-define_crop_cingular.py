@@ -51,7 +51,7 @@ mask_dir = abspath(mask_dir)
 
 # Defines other parameters
 sulcus_name = "F.C.M.ant."
-number_subjects = "all" # 0 is for testing, "all" means all subjects
+number_subjects = "all"  # 0 is for testing, "all" means all subjects
 
 # Defines the command line parameters for crop_definition
 # The paracingular sulcus is defined as F.C.M.ant. in the Tissier database
