@@ -45,15 +45,15 @@ from os.path import abspath
 from deep_folding.anatomist_tools import crop_definition
 
 # Defines targets directories
-bbox_dir = "../../Input/Processed_Local/bbox/2mm"
-mask_dir = "../../Input/Processed_Local/mask/2mm"
+bbox_dir = "../../../../Input/Processed_Local/bbox/2mm"
+mask_dir = "../../../../Input/Processed_Local/mask/2mm"
 
 bbox_dir = abspath(bbox_dir)
 mask_dir = abspath(mask_dir)
 
 # Defines other parameters
 sulcus_name = "F.C.M.ant."
-number_subjects = -1 #0 is for testing, -1 means all subjects
+number_subjects = "all" # 0 is for testing, "all" means all subjects
 
 # Defines the command line parameters for crop_definition
 # The paracingular sulcus is defined as F.C.M.ant. in the Tissier database
