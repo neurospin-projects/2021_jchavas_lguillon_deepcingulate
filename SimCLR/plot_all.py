@@ -36,6 +36,7 @@ import glob
 import os
 import argparse
 import json
+import numpy as np
 
 from matplotlib import pyplot as plt
 
@@ -91,7 +92,9 @@ def loop_over_directory(src_dir):
 
     color = 'tab:blue'
     ax2.set_ylabel('Silhouette score', color=color)
-    ax2.plot(latent_space_size, AffinityPropagation, c=color, marker='o', label='Silhouette score')
+    print(type(AffinityPropagation))
+    print(type(AffinityPropagation[0]))
+    ax2.plot(latent_space_size, np.array(AffinityPropagation), c=color, marker='o', label='Silhouette score')
     ax2.tick_params(axis='y', labelcolor=color)
     ax2.legend(loc=0)
 
