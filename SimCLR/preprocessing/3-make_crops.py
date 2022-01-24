@@ -44,22 +44,22 @@ from deep_folding.anatomist_tools import dataset_gen_pipe
 
 # Defines source and targets directories
 crop_dir = "../../../../Input/Processed_Local/crops/CINGULATE"\
-           "/mask/sulcus_based/2mm/centered_combined"
+           "/mask/sulcus_based/2mm/centered_combined/hcp"
 mask_dir = "../../../../Input/Processed_Local/mask/2mm"
 
 crop_dir = abspath(crop_dir)
 mask_dir = abspath(mask_dir)
 
 # Defines other parameters
-number_subjects = "all"  # 0 is for testing, "all" means all subjects
+number_subjects = 10  # 0 is for testing, "all" means all subjects
 
 
 # Defines the command line parameters for dataset_gen_pipe
 args = "-s /tgcc/hcp "\
        f"-t {crop_dir} "\
        f"-a {mask_dir} "\
-       "-u paracingular. F.C.M.ant. "\
-       "-i R -p s -c mask -v 2 2 2 -o True"
+       "-u F.C.M.ant. paracingular. "\
+       f"-i R -p s -c mask -v 2 2 2 -o True -n {number_subjects}"
 argv = args.split(' ')
 
 print("")
