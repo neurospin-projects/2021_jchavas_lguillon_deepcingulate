@@ -62,11 +62,10 @@ def gridsearch_bVAE_sub1(trainloader, valloader):
 
         """ Evaluate model performances """
         dico_set_loaders = {'train': trainloader, 'val': valloader}
-        #dico_set_loaders = {'val': valloader}
 
         tester = ModelTester(model=vae, dico_set_loaders=dico_set_loaders,
                              loss_func=criterion, kl_weight=kl,
-                             n_latent=n, depth=3, root_dir=root_dir)
+                             n_latent=n, depth=3)
 
         results = tester.test()
         encoded = {loader_name:[results[loader_name][k] for k in results[loader_name].keys()] for loader_name in dico_set_loaders.keys()}

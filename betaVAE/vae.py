@@ -33,42 +33,28 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license version 2 and that you accept its terms.
 
-""" beta-VAE
-
-"""
-
-######################################################################
-# Imports and global variables definitions
-######################################################################
-
-import os
 from collections import OrderedDict
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy.stats as stat
-import time
-import argparse
 import torch
-from tqdm import tqdm
 import pandas as pd
 from torch.autograd import Variable
 import torch.nn as nn
-from torchvision import models
-#from torchsummary import summary
 
-from deep_folding.preprocessing import *
 from deep_folding.utils.pytorchtools import EarlyStopping
-from postprocessing.test_tools import compute_loss, plot_loss
-
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import StratifiedKFold
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC
-from sklearn.metrics import balanced_accuracy_score
+from postprocess import plot_loss
 
 
 class VAE(nn.Module):
+    """ beta-VAE class
+    """
     def __init__(self, in_shape, n_latent, depth):
+        """
+        Args:
+            in_shape: tuple, input shape
+            n_latent: int, latent space size
+            depth: int, depth of the model
+
+        """
         super().__init__()
         self.in_shape = in_shape
         self.n_latent = n_latent
@@ -92,16 +78,15 @@ class VAE(nn.Module):
             modules_encoder.append(('LeakyReLU%sa' %step, nn.LeakyReLU()))
         self.encoder = nn.Sequential(OrderedDict(modules_encoder))
 
-        self.z_mean = nn.Linear(64 * self.z_dim_h * self.z_dim_w* self.z_dim_d, n_latent) # 8000 -> n_latent = 3
-        self.z_var = nn.Linear(64 * self.z_dim_h * self.z_dim_w* self.z_dim_d, n_latent) # 8000 -> n_latent = 3
-        self.z_develop = nn.Linear(n_latent, 64 *self.z_dim_h * self.z_dim_w* self.z_dim_d) # n_latent -> 8000
+        self.z_mean = nn.Linear(64 * self.z_dim_h * self.z_dim_w* self.z_dim_d, n_latent)
+        self.z_var = nn.Linear(64 * self.z_dim_h * self.z_dim_w* self.z_dim_d, n_latent)
+        self.z_develop = nn.Linear(n_latent, 64 *self.z_dim_h * self.z_dim_w* self.z_dim_d)
 
         modules_decoder = []
         for step in range(depth-1):
             in_channels = out_channels
             out_channels = in_channels // 2
             ini = 1 if step==0 else 0
-            #ini =0
             modules_decoder.append(('convTrans3d%s' %step, nn.ConvTranspose3d(in_channels,
                         out_channels, kernel_size=2, stride=2, padding=0, output_padding=(ini,0,0))))
             modules_decoder.append(('normup%s' %step, nn.BatchNorm3d(out_channels)))
@@ -122,11 +107,9 @@ class VAE(nn.Module):
         """
         for module in self.modules():
             if isinstance(module, nn.ConvTranspose3d) or isinstance(module, nn.Conv3d):
-                #print('weight module conv')
                 nn.init.xavier_normal_(module.weight)
                 nn.init.constant_(module.bias, 0)
             elif isinstance(module, nn.BatchNorm2d):
-                #print('weight module batchnorm')
                 nn.init.constant_(module.weight, 1)
                 nn.init.constant_(module.bias, 0)
             elif isinstance(module, nn.Linear):
@@ -140,183 +123,60 @@ class VAE(nn.Module):
         return (noise * stddev) + mean
 
     def encode(self, x):
-        #print(x.shape)
         x = self.encoder(x)
-        #print(x.shape)
         x = nn.functional.normalize(x, p=2)
         x = x.view(x.size(0), -1)
-        #print(x.shape)
         mean = self.z_mean(x)
-        #print(mean.shape)
         var = self.z_var(x)
         return mean, var
 
     def decode(self, z):
-        #print("z", z.shape)
         out = self.z_develop(z)
-        #print(out.shape)
         out = out.view(z.size(0), 16 * 2**(self.depth-1), self.z_dim_h, self.z_dim_w, self.z_dim_d)
-        #print(out.shape)
         out = self.decoder(out)
-        #print(out.shape)
         return out
 
     def forward(self, x):
         mean, logvar = self.encode(x)
         z = self.sample_z(mean, logvar)
         out = self.decode(z)
-        return out, mean, logvar, mean
+        return out, mean, logvar
 
 
 def vae_loss(output, input, mean, logvar, loss_func, kl_weight):
     recon_loss = loss_func(output, input)
-    #recon_loss = recon_loss /512000
-    """kl_loss = torch.mean(0.5 * torch.sum(
-                        torch.exp(logvar) + mean**2 - 1. - logvar, 1),
-                        dim=0)"""
     kl_loss = -0.5 * torch.sum(-torch.exp(logvar) - mean**2 + 1. + logvar)
-    #kl_loss = kl_loss / 100
     return recon_loss, kl_loss, recon_loss + kl_weight * kl_loss
 
 
-class ModelTrainer():
-
-    def __init__(self, model, train_loader, val_loader, loss_func, nb_epoch, optimizer, kl_weight,
-                n_latent, depth, skeleton, root_dir):
-        self.model = model
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.loss_func = loss_func
-        self.nb_epoch = nb_epoch
-        self.optimizer = optimizer
-        self.kl_weight = kl_weight
-        #self.lr = lr
-        self.n_latent = n_latent
-        self.depth = depth
-        self.skeleton = skeleton
-        self.root_dir = root_dir
-
-    def train(self):
-        id_arr, phase_arr, input_arr, output_arr = [], [], [], []
-        conv1, conv2, conv3 = [], [], []
-        self.list_loss_train, self.list_loss_val = [], []
-        self.list_recon_train, self.list_recon_val = [], []
-        self.list_kl_train, self.list_kl_val = [], []
-        device = torch.device("cuda", index=0)
-        early_stopping = EarlyStopping(patience=20, verbose=True)
-
-        print('skeleton', self.skeleton)
-
-        for epoch in range(self.nb_epoch):
-            loss_tot_train, loss_tot_val = 0, 0
-            recon_loss_tot, kl_tot, recon_loss_tot_val, kl_tot_val = 0, 0, 0, 0
-            self.model.train()
-            for inputs, path in self.train_loader:
-                self.optimizer.zero_grad()
-                #print('input', np.unique(inputs))
-                inputs = Variable(inputs).to(device, dtype=torch.float32)
-                output, mean, logvar, z = self.model(inputs)
-                if self.skeleton:
-                    target = torch.squeeze(inputs, dim=1).long()
-                    recon_loss, kl, loss_train = vae_loss(output, target, mean,
-                                                 logvar, self.loss_func,
-                                                 kl_weight=self.kl_weight)
-                    output = torch.argmax(output, dim=1)
-                else:
-                    loss_train = vae_loss(output, inputs, mean, logvar, self.loss_func,
-                                      kl_weight=self.kl_weight)
-                loss_tot_train += loss_train.item()
-                recon_loss_tot += recon_loss.item()
-                kl_tot += kl.item()
-
-
-                #self.optimizer.zero_grad()
-                loss_train.backward()
-                self.optimizer.step()
-
-            if epoch == self.nb_epoch-1:
-                phase = 'train'
-                for k in range(len(path)):
-                    id_arr.append(path[k])
-                    phase_arr.append(phase)
-                    input_arr.append(np.array(np.squeeze(inputs[k]).cpu().detach().numpy()))
-                    output_arr.append(np.squeeze(output[k]).cpu().detach().numpy())
-
-            self.model.eval()
-            for inputs, path in self.val_loader:
-                #print(inputs.shape)
-                inputs = Variable(inputs).to(device, dtype=torch.float32)
-
-                output, mean, logvar, z = self.model(inputs)
-                if self.skeleton:
-                    target = torch.squeeze(inputs, 0).long()
-                    recon_loss_val, kl_val, loss_val = vae_loss(output, target,
-                                                       mean, logvar, self.loss_func,
-                                                       kl_weight=self.kl_weight)
-                    output = torch.argmax(output, dim=1)
-                else:
-                    loss_val = vae_loss(output, inputs, mean, logvar, self.loss_func,
-                                    self.kl_weight)
-                loss_tot_val += loss_val.item()
-                recon_loss_tot_val += recon_loss_val.item()
-                kl_tot_val += kl_val.item()
-
-            self.list_loss_train.append(loss_tot_train/len(self.train_loader))
-            self.list_loss_val.append(loss_tot_val/len(self.val_loader))
-            self.list_recon_train.append(recon_loss_tot/len(self.train_loader))
-            self.list_recon_val.append(recon_loss_tot_val/len(self.val_loader))
-            self.list_kl_train.append(kl_tot/len(self.train_loader))
-            self.list_kl_val.append(kl_tot_val/len(self.val_loader))
-
-            if epoch == self.nb_epoch-1:
-                phase = 'val'
-                for k in range(len(path)):
-                    id_arr.append(path[k])
-                    phase_arr.append(phase)
-                    input_arr.append(np.array(np.squeeze(inputs[k]).cpu().detach().numpy()))
-                    output_arr.append(np.squeeze(output[k]).cpu().detach().numpy())
-
-            print('epoch [{}/{}], loss_train:{:.4f}, loss_val:{:.4f}, '.format(epoch,
-            self.nb_epoch, loss_tot_train/len(self.train_loader), loss_tot_val/len(self.val_loader)))
-            print('loss_recon_train:{:.4f}, loss_recon_val:{:.4f}, '.format(
-            recon_loss_tot/len(self.train_loader), recon_loss_tot_val/len(self.val_loader)))
-            print('loss_kl_train:{:.4f}, loss_kl_val:{:.4f}, '.format(
-            kl_tot/len(self.train_loader), kl_tot_val/len(self.val_loader)))
-
-            if early_stopping.early_stop:
-                print("EarlyStopping")
-                phase = 'val'
-                for k in range(len(path)):
-                    id_arr.append(path[k])
-                    phase_arr.append(phase)
-                    input_arr.append(np.array(np.squeeze(inputs[k]).cpu().detach().numpy()))
-                    output_arr.append(np.squeeze(output[k]).cpu().detach().numpy())
-
-        for key, array in {'input': input_arr, 'output' : output_arr,
-                'phase': phase_arr, 'id': id_arr}.items():
-                    np.save(self.root_dir+key, np.array([array]))
-
-        plot_loss(self.list_loss_train[1:], self.root_dir+'tot_train_')
-        plot_loss(self.list_loss_val[1:], self.root_dir+'tot_val_')
-        plot_loss(self.list_recon_train[1:], self.root_dir+'recon_train_')
-        plot_loss(self.list_recon_val[1:], self.root_dir+'recon_train_')
-        plot_loss(self.list_kl_train[1:], self.root_dir+'kl_train_')
-        plot_loss(self.list_kl_val[1:], self.root_dir+'kl_val_')
-        return min(self.list_loss_train), min(self.list_loss_val), id_arr, phase_arr, input_arr, output_arr
-
-
 class ModelTester():
+    """
+    Class to test data with a trained model
+    """
+    def __init__(self, model, dico_set_loaders, kl_weight, loss_func,
+                n_latent, depth):
+        """
+        Args:
+            model: trained model to use
+            dico_set_loaders: dictionnary of type:
+                                            {"test_set_1": test_set_1_loader}
+            kl_weight: beta value
+            loss_func: reconstruction criterion
+            n_latent: size of latent space
+            depth: depth of the model
 
-    def __init__(self, model, dico_set_loaders, loss_func, kl_weight,
-                n_latent, depth, root_dir):
+        Returns:
+            results: dictionnary of type:
+                {"test_set_1": {"x1": latent_embedding_x1},
+                               {"x2": latent_embedding_x2}
+                }
+        """
         self.model = model
         self.dico_set_loaders = dico_set_loaders
-        self.loss_func = loss_func
         self.kl_weight = kl_weight
         self.n_latent = n_latent
         self.depth = depth
-        self.root_dir = root_dir
-
+        self.loss_func = loss_func
 
     def test(self):
         id_arr, input_arr, phase_arr, output_arr = [], [], [], []
@@ -331,29 +191,19 @@ class ModelTester():
             with torch.no_grad():
                 for inputs, path in loader:
                     inputs = Variable(inputs).to(device, dtype=torch.float32)
-                    output, mean, logvar, z = self.model(inputs)
+                    output, z, logvar = self.model(inputs)
                     target = torch.squeeze(inputs, dim=1).long()
-                    recon_loss_val, kl_val, loss_val = vae_loss(output, target, mean, logvar, self.loss_func,
+                    recon_loss_val, kl_val, loss_val = vae_loss(output, target, z, logvar, self.loss_func,
                                      kl_weight=self.kl_weight)
                     output = torch.argmax(output, dim=1)
-                    #print(z.shape)
-                    #out_z = np.array(z[].cpu().detach().numpy()))
-                    #print(np.array(torch.squeeze(z, dim=0).cpu().detach().numpy()).shape)
-                    #results[loader_name][path] = (loss_val.item(), output, inputs, out_z)
 
                     for k in range(len(path)):
                         id_arr.append(path)
                         input_arr.append(np.array(np.squeeze(inputs).cpu().detach().numpy()))
                         output_arr.append(np.squeeze(output).cpu().detach().numpy())
                         phase_arr.append(loader_name)
-
-                        #out_z.append(np.array(np.squeeze(z[k]).cpu().detach().numpy()))
                         out_z = np.array(np.squeeze(z[k]).cpu().detach().numpy())
-                        #print(np.array(out_z).shape)
-                        results[loader_name][path[k]] = out_z
-        #print(np.array(out_z).shape)
 
-        #for key, array in {'input': input_arr, 'output' : output_arr,
-        #                    'phase': phase_arr, 'id': id_arr}.items():
-        #    np.save(self.root_dir+key+'val', np.array([array]))
+                        results[loader_name][path[k]] = out_z
+
         return results

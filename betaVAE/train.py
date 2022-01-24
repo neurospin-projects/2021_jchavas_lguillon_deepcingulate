@@ -1,81 +1,96 @@
+# -*- coding: utf-8 -*-
 # /usr/bin/env python3
-# coding: utf-8
+#
+#  This software and supporting documentation are distributed by
+#      Institut Federatif de Recherche 49
+#      CEA/NeuroSpin, Batiment 145,
+#      91191 Gif-sur-Yvette cedex
+#      France
+#
+# This software is governed by the CeCILL license version 2 under
+# French law and abiding by the rules of distribution of free software.
+# You can  use, modify and/or redistribute the software under the
+# terms of the CeCILL license version 2 as circulated by CEA, CNRS
+# and INRIA at the following URL "http://www.cecill.info".
+#
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability.
+#
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or
+# data to be ensured and,  more generally, to use and operate it in the
+# same conditions as regards security.
+#
+# The fact that you are presently reading this means that you have had
+# knowledge of the CeCILL license version 2 and that you accept its terms.
 
 import numpy as np
 import pandas as pd
-from operator import itemgetter
-from functools import partial
 from torchsummary import summary
 
 from vae import *
-import datasets
-#from ray_tune import test_benchmarks
 from deep_folding.utils.pytorchtools import EarlyStopping
-from sklearn.model_selection import train_test_split
 
 
-def train_vae(config, root_dir=None):
+def train_vae(config, trainloader, valloader, root_dir=None):
+    """ Trains beta-VAE for a given hyperparameter configuration
+    Args:
+        config: instance of class Config
+        trainloader: torch loader of training data
+        valloader: torch loader of validation data
+        root_dir: str, directory where to save model
+
+    Returns:
+        vae: trained model
+        final_loss_val
+    """
     torch.manual_seed(0)
-    vae = VAE((1, 20, 40, 40), config["n"], depth=3)
+    lr = config.lr
+    vae = VAE(config.in_shape, config.n, depth=3)
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda:0"
-        if torch.cuda.device_count() > 1:
-            vae = nn.DataParallel(vae)
     vae.to(device)
-    summary(vae, (1, 20, 40, 40))
+    summary(vae, config.in_shape)
 
-    #weights = [1, 200, 27, 356]
-    #weights = [1, 20, 10, 30]
-    weights = [1, 1]
+    weights = [1, 2]
     class_weights = torch.FloatTensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='sum')
-    optimizer = torch.optim.Adam(vae.parameters(), lr=config["lr"])
+    optimizer = torch.optim.Adam(vae.parameters(), lr=lr)
 
-    trainset = datasets.create_train_set()
-    print(len(trainset))
-    #train_set, val_set, _, _ = train_test_split(trainset, labels, test_size=0.33,
-    #                                    random_state=42)
-    train_set, val_set = torch.utils.data.random_split(trainset,
-                            [round(0.8*len(trainset)), round(0.2*len(trainset))])
-
-    trainloader = torch.utils.data.DataLoader(
-                  train_set,
-                  batch_size=64,
-                  num_workers=8,
-                  shuffle=True)
-    valloader = torch.utils.data.DataLoader(
-                val_set,
-                batch_size=8,
-                num_workers=8,
-                shuffle=True)
-    print('size of train loader: ', len(trainloader)*64, 'size of val loader: ',
-          len(valloader)*8)
-    nb_epoch = 500
+    nb_epoch = config.nb_epoch
     early_stopping = EarlyStopping(patience=12, verbose=True, root_dir=root_dir)
 
     list_loss_train, list_loss_val = [], []
+
+    # arrays enabling to see model reconstructions
     id_arr, phase_arr, input_arr, output_arr = [], [], [], []
-    for epoch in range(nb_epoch):  # loop over the dataset multiple times
-        #print(epoch)
+
+    for epoch in range(config.nb_epoch):
         running_loss = 0.0
         epoch_steps = 0
         for inputs, path in trainloader:
-            # zero the parameter gradients
             optimizer.zero_grad()
 
-            # forward + backward + optimize
             inputs = Variable(inputs).to(device, dtype=torch.float32)
             target = torch.squeeze(inputs, dim=1).long()
-            output, mean, logvar, z = vae(inputs)
-            recon_loss, kl, loss = vae_loss(output, target, mean,
+            output, z, logvar = vae(inputs)
+            recon_loss, kl, loss = vae_loss(output, target, z,
                                     logvar, criterion,
-                                    kl_weight=config["kl"])
+                                    kl_weight=config.kl)
             output = torch.argmax(output, dim=1)
             loss.backward()
             optimizer.step()
 
-            # print statistics
             running_loss += loss.item()
             epoch_steps += 1
         print("[%d] loss: %.3f" % (epoch + 1,
@@ -83,6 +98,7 @@ def train_vae(config, root_dir=None):
         list_loss_train.append(running_loss / epoch_steps)
         running_loss = 0.0
 
+        """ Saving of reconstructions for visualization in Anatomist software """
         if epoch == nb_epoch-1:
             for k in range(len(path)):
                 id_arr.append(path[k])
@@ -98,11 +114,11 @@ def train_vae(config, root_dir=None):
         for inputs, path in valloader:
             with torch.no_grad():
                 inputs = Variable(inputs).to(device, dtype=torch.float32)
-                output, mean, logvar, z = vae(inputs)
+                output, z, logvar = vae(inputs)
                 target = torch.squeeze(inputs, dim=1).long()
                 recon_loss_val, kl_val, loss = vae_loss(output, target,
-                                        mean, logvar, criterion,
-                                        kl_weight=config["kl"])
+                                        z, logvar, criterion,
+                                        kl_weight=config.kl)
                 output = torch.argmax(output, dim=1)
 
                 val_loss += loss.cpu().numpy()
@@ -111,18 +127,10 @@ def train_vae(config, root_dir=None):
         print("[%d] validation loss: %.3f" % (epoch + 1, valid_loss))
         list_loss_val.append(valid_loss)
 
-        if epoch == nb_epoch-1:
-            for k in range(len(path)):
-                id_arr.append(path[k])
-                phase_arr.append('val')
-                input_arr.append(np.array(np.squeeze(inputs[k]).cpu().detach().numpy()))
-                output_arr.append(np.squeeze(output[k]).cpu().detach().numpy())
-
-        # early_stopping needs the validation loss to check if it has decresed,
-        # and if it has, it will make a checkpoint of the current model
         early_stopping(valid_loss, vae)
-        if early_stopping.early_stop:
-            print("EarlyStopping")
+
+        """ Saving of reconstructions for visualization in Anatomist software """
+        if early_stopping.early_stop or epoch == nb_epoch-1:
             for k in range(len(path)):
                 id_arr.append(path[k])
                 phase_arr.append('val')
@@ -131,25 +139,15 @@ def train_vae(config, root_dir=None):
             break
     for key, array in {'input': input_arr, 'output' : output_arr,
                            'phase': phase_arr, 'id': id_arr}.items():
-        np.save(root_dir+key, np.array([array]))
+        np.save(config.save_dir+key, np.array([array]))
 
-    plot_loss(list_loss_train[1:], root_dir+'tot_train_')
-    plot_loss(list_loss_val[1:], root_dir+'tot_val_')
+    plot_loss(list_loss_train[1:], config.save_dir+'tot_train_')
+    plot_loss(list_loss_val[1:], config.save_dir+'tot_val_')
+    final_loss_val = list_loss_val[-1:]
 
-    torch.save((vae.state_dict(), optimizer.state_dict()), root_dir + 'vae.pt')
+    """Saving of trained model"""
+    torch.save((vae.state_dict(), optimizer.state_dict()),
+                config.save_dir + 'vae.pt')
 
-    # test on benchmark discrimination abilities
-    #knn, logreg, svm = test_benchmarks(testset, config, vae)
-    #print(knn, logreg, svm)
     print("Finished Training")
-
-
-def main():
-    config = {"lr": 2e-4, "kl": 1, "n": 20}
-    root_dir = f"/neurospin/dico/lguillon/midl_22/gridsearch/n_{config['n']}_kl_{config['kl']}/"
-
-    train_vae(config, root_dir=root_dir)
-
-
-if __name__ == '__main__':
-    main()
+    return vae, final_loss_val
