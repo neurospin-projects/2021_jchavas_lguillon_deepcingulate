@@ -61,7 +61,7 @@ def parse_args(argv):
     return args
 
 
-def loop_over_directory(src_dir):
+def plot_loss_silhouette_score(src_dir):
     """Loops over deep learning directories
     """
     # Gets and creates all filenames
@@ -122,7 +122,7 @@ def main(argv):
     try:
         # Parsing arguments
         args = parse_args(argv)
-        loop_over_directory(args.src_dir)
+        plot_loss_silhouette_score(args.src_dir)
     except SystemExit as exc:
         if exc.code != 0:
             six.reraise(*sys.exc_info())
