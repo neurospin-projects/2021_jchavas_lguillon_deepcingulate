@@ -1,6 +1,6 @@
 # @package _group_
 defaults:
-  - hydra: vscode
+  - hydra: local
   - hydra/job_logging: custom
   - dataset: cingulate
   - model: SimCLR
