@@ -17,11 +17,17 @@ Dependencies
 - pandas >= 0.23.3
 
 
-Training the models
--------------------
-First, the repository can be cloned thanks to:
+Installation
+------------
 
 .. code-block:: shell
 
     git clone https://github.com/neurospin-projects/2021_jchavas_lguillon_deepcingulate
     cd 2021_jchavas_lguillon_deepcingulate
+    pip3 install -e .
+    
+Training the models
+-------------------
+We follow the README for each model:
+    * :ref: `betaVAE/README.md`
+    * :ref: `SimCLR/README.rst`
