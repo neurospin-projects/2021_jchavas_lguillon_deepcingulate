@@ -1,66 +1,29 @@
 SimCLR training
 ###############
 
-This folder contains scripts to run preprocessing SimCLR training
- and evaluation on cingulate folding structures.
+Customize paths
+===============
 
-Description of parts
-====================
+In the configuration file configs/dataset/cingulate.yaml, update the path of the pickle file andof the csv file:
 
-backbones
----------
-Definition of neural network backbones.
+.. code-block:: shell
+    pickle_normal: /path/to/pickle_file
+    train_val_csv_file: /path/to/csv/file
 
-configs
--------
-yaml hydra-like configuration files.
+Training
+========
 
-data
-----
-Definition of datasets and data modules.
+We launch the training from SimCLR folder:
+.. code-block:: shell
 
-evaluation
-----------
-Scripts to evaluate the models (clustering,...).
+    python3 train.py
 
-models
-------
-Model definitions.
+Evaluate results
+================
 
-notebooks
----------
-Notebooks.
+We evaluate the results by scanning the output deep learning folders and reading the test csv file:
 
-preprocessing
--------------
-Command to get input crops from HCP dataset.
+.. code-block:: shell
 
-utils
------
-All utility functions that don't enter in other categories.
-
-augmentations.py
-----------------
-File containing the augmentation classes.
-
-losses.py
----------
-File containing loss functions
-
-train.py
---------
-Python script to launch the training
-
-synthesize_results.py
----------------------
-Python script to synthesize the results.
-
-
-Tutorial: generate the whole pipeline
-=====================================
-
-To generate postprocessing in "test" mode, we run the following command:
-
-python3 postprocessing_results.py test=True checkpoint_path="/host/volatile/jc225751/Runs/23_to_midl2021_software/Output/first-model/logs/default/version_0/checkpoints/epoch\=99-step\=5599.ckpt"
-
+    python3 synthesize_results -s /path/to/output/file -c /path/to/csv/file
 
