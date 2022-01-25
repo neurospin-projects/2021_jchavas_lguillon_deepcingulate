@@ -29,5 +29,5 @@ Installation
 Training the models
 -------------------
 We follow the README for each model:
-    * :ref: `betaVAE/README.md`
-    * :ref: `SimCLR/README.rst`
+    * :ref: `betaVAE/README.md`_
+    * :ref: `SimCLR/README.rst`_
