@@ -29,5 +29,5 @@ Installation
 Training the models
 -------------------
 We follow the README for each model:
-    * `README of beta-VAE model <betaVAE/README.md>`_
+    * `README of beta-VAE model <betaVAE/readme.md>`_
     * `README of SimCLR model <SimCLR/README.rst>`_
