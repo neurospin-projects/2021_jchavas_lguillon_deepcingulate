@@ -222,6 +222,7 @@ def create_sets(config, mode='training'):
     pickle_file_path = config.pickle_normal
     log.info("Current directory = " + os.getcwd())
     normal_data = pd.read_pickle(pickle_file_path)
+    print(normal_data.head())
     normal_subjects = normal_data.columns.tolist()
 
     # Loads benchmarks (crops from another region) from all subjects
