@@ -64,7 +64,6 @@ from SimCLR.models.contrastive_learner_visualization \
     import ContrastiveLearner_Visualization
 from SimCLR.utils.config import process_config
 from SimCLR.utils.plots.visualize_tsne import plot_tsne
-# from sklearn.cluster import OPTICS
 
 tb_logger = pl_loggers.TensorBoardLogger('logs')
 writer = SummaryWriter()
