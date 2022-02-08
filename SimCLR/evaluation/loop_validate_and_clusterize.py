@@ -89,7 +89,7 @@ def loop_over_directory(src_dir, csv_file):
 
 
 def main(argv):
-    """Reads argument line and launches postprocessing_results on each
+    """Reads argument line and launches validate_and_clusterize on each
 
     Args:
         argv: a list containing command line arguments
@@ -112,4 +112,4 @@ if __name__ == '__main__':
     main(argv=sys.argv[1:])
 
     # example of use
-    # python3 analysis_each.py -s ../../../Output/t-0.1
+    # python3 loop_validate_and_clusterize.py -s ../../../Output/t-0.1

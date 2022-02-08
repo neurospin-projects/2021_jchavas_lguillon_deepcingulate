@@ -111,7 +111,7 @@ def plot_loss_silhouette_score(src_dir):
 
 
 def main(argv):
-    """Reads argument line and launches postprocessing_results on each
+    """Reads argument line and plots silhouette score on directory
 
     Args:
         argv: a list containing command line arguments
