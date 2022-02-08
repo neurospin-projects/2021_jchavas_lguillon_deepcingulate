@@ -45,6 +45,7 @@ We then download and install the present deep learning package:
     
 Training the models
 -------------------
+Data are available in <data/>`_ directory.
 To train and evaluate each model, we follow the corresponding README:
     * `README of beta-VAE model <betaVAE/readme.md>`_
     * `README of SimCLR model <SimCLR/README.rst>`_
