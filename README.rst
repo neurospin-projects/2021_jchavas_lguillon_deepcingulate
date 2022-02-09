@@ -32,6 +32,12 @@ We then download and install the present deep learning package:
     cd 2021_jchavas_lguillon_deepcingulate
     pip3 install -e .
     
+As an alternative to the last step, we can also use the provided requirements file:
+
+.. code-block:: shell
+
+    pip3 install -r requirements.txt
+    
 Training the models
 -------------------
 Data are available in the `data <data/>`_ directory.
