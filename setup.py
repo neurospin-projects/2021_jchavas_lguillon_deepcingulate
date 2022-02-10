@@ -26,6 +26,7 @@ setup(
                       'pytorch-lightning',
                       'lightly',
                       'toolz',
+		      'ipykernel',
                       'deep_folding @ \
                         git+https://git@github.com/neurospin/deep_folding@2022_midl',
                       ],
