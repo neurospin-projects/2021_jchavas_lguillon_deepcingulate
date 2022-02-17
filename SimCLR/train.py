@@ -71,7 +71,6 @@ def train(config):
     data_module = DataModule(config)
 
     model = ContrastiveLearner(config,
-                               mode="encoder",
                                sample_data=data_module)
 
     summary(model, tuple(config.input_size), device="cpu")
@@ -81,10 +80,9 @@ def train(config):
         max_epochs=config.max_epochs,
         logger=tb_logger,
         flush_logs_every_n_steps=config.nb_steps_per_flush_logs,
-        log_every_n_steps=config.log_every_n_steps,
-        resume_from_checkpoint=config.checkpoint_path)
+        log_every_n_steps=config.log_every_n_steps)
 
-    trainer.fit(model, data_module)
+    trainer.fit(model, data_module, ckpt_path=config.checkpoint_path)
 
     print("Number of hooks: ", len(model.save_output.outputs))
 

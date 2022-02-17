@@ -64,14 +64,14 @@ class SaveOutput:
 
 class ContrastiveLearner(DenseNet):
 
-    def __init__(self, config, mode, sample_data):
+    def __init__(self, config, sample_data):
         super(ContrastiveLearner, self).__init__(
             growth_rate=config.growth_rate,
             block_config=config.block_config,
             num_init_features=config.num_init_features,
             num_representation_features=config.num_representation_features,
             num_outputs=config.num_outputs,
-            mode=mode,
+            mode=config.mode,
             drop_rate=config.drop_rate)
         self.config = config
         self.sample_data = sample_data
@@ -288,7 +288,7 @@ class ContrastiveLearner(DenseNet):
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
 
         # logs histograms
-        # self.custom_histogram_adder()
+        self.custom_histogram_adder()
 
         # logging using tensorboard logger
         self.logger.experiment.add_scalar(
