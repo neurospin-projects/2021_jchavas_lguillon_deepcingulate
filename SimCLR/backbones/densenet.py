@@ -110,12 +110,28 @@ class DenseNet(pl.LightningModule):
                  num_classes=1000, in_channels=1,
                  num_representation_features=256,
                  num_outputs=64,
-                 mode="encoder", memory_efficient=False):
+                 mode="encoder",
+                 memory_efficient=False,
+                 in_shape=None,
+                 depth=3):
 
         super(DenseNet, self).__init__()
 
-        assert mode in {'encoder', 'classifier'},\
+        assert mode in {'encoder', 'decoder', 'classifier'},\
             "Unknown mode selected: %s" % mode
+
+
+        self.mode = mode
+        self.num_representation_features = num_representation_features
+        self.num_outputs = num_outputs
+
+        # Decoder part
+        self.in_shape = in_shape
+        c, h, w, d = in_shape
+        self.depth = depth
+        self.z_dim_h = h//2**self.depth # receptive field downsampled 2 times
+        self.z_dim_w = w//2**self.depth
+        self.z_dim_d = d//2**self.depth
 
         # First convolution
         self.features = nn.Sequential(OrderedDict([
@@ -125,9 +141,7 @@ class DenseNet(pl.LightningModule):
             ('relu0', nn.ReLU(inplace=True)),
             ('pool0', nn.MaxPool3d(kernel_size=3, stride=2, padding=1)),
         ]))
-        self.mode = mode
-        self.num_representation_features = num_representation_features
-        self.num_outputs = num_outputs
+
         # Each denseblock
         num_features = num_init_features
         for i, num_layers in enumerate(block_config):
@@ -149,6 +163,7 @@ class DenseNet(pl.LightningModule):
                 num_features = num_output_features
 
         self.num_features = num_features
+        print(f"num_features = {num_features}")
 
         if self.mode == "classifier":
             # Final batch norm
@@ -160,6 +175,30 @@ class DenseNet(pl.LightningModule):
                 num_features, self.num_representation_features)
             self.head_projection = nn.Linear(self.num_representation_features,
                                              self.num_outputs)
+        elif self.mode == "decoder":
+            self.hidden_representation = nn.Linear(
+                num_features, self.num_representation_features)
+            self.develop = nn.Linear(self.num_representation_features,
+                                     64 *self.z_dim_h * self.z_dim_w* self.z_dim_d)
+            modules_decoder = []
+            out_channels = 64
+            for step in range(self.depth-1):
+                in_channels = out_channels
+                out_channels = in_channels // 2
+                ini = 1 if step==0 else 0
+                modules_decoder.append(('convTrans3d%s' %step, nn.ConvTranspose3d(in_channels,
+                            out_channels, kernel_size=2, stride=2, padding=0, output_padding=(ini,0,0))))
+                modules_decoder.append(('normup%s' %step, nn.BatchNorm3d(out_channels)))
+                modules_decoder.append(('ReLU%s' %step, nn.ReLU()))
+                modules_decoder.append(('convTrans3d%sa' %step, nn.ConvTranspose3d(out_channels,
+                            out_channels, kernel_size=3, stride=1, padding=1)))
+                modules_decoder.append(('normup%sa' %step, nn.BatchNorm3d(out_channels)))
+                modules_decoder.append(('ReLU%sa' %step, nn.ReLU()))
+            modules_decoder.append(('convtrans3dn', nn.ConvTranspose3d(16, 1, kernel_size=2,
+                            stride=2, padding=0)))
+            modules_decoder.append(('conv_final', nn.Conv3d(1, 2, kernel_size=1, stride=1)))
+            self.decoder = nn.Sequential(OrderedDict(modules_decoder))
+
 
         # Init. with kaiming
         for m in self.modules():
@@ -170,6 +209,37 @@ class DenseNet(pl.LightningModule):
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.Linear):
                 nn.init.constant_(m.bias, 0)
+
+        
+        if self.mode == "decoder":
+
+            # This loads pretrained weight
+            path = "/host/volatile/jc225751/Runs/33_MIDL_2022_reviews/Output/t-0.1/n-004_o-4/logs/default/version_0/checkpoints/epoch=299-step=8399.ckpt"
+            pretrained = torch.load(path)
+            model_dict = self.state_dict()
+            for n, p in pretrained['state_dict'].items():
+                if n in model_dict:
+                    model_dict[n] = p
+            self.load_state_dict(model_dict)
+
+            # This freezes all layers except projection head layers
+            layer_counter = 0
+            for (name, module) in self.named_children():
+                print(f"Module name = {name}")
+
+            for (name, module) in self.named_children():
+                if name == 'features':
+                    for layer in module.children():
+                        for param in layer.parameters():
+                            param.requires_grad = False
+                        
+                        print('Layer "{}" in module "{}" was frozen!'.format(layer_counter, name))
+                        layer_counter+=1
+            for param in self.hidden_representation.parameters():
+                param.requires_grad = False
+            print('Layer "{}" in module "{}" was frozen!'.format(layer_counter, "representation"))
+            for (name, param) in self.named_parameters():
+                print(f"{name}: learning = {param.requires_grad}")
 
     def forward(self, x):
         # Eventually keep the input images for visualization
@@ -188,6 +258,16 @@ class DenseNet(pl.LightningModule):
             out = self.hidden_representation(out)
             out = F.relu(out, inplace=True)
             out = self.head_projection(out)
+        elif self.mode == "decoder":
+            out = F.relu(features, inplace=True)
+            out = F.adaptive_avg_pool3d(out, 1)
+            out = torch.flatten(out, 1)
+
+            out = self.hidden_representation(out)    
+            out = F.relu(out, inplace=True)
+            out = self.develop(out)
+            out = out.view(out.size(0), 16 * 2**(self.depth-1), self.z_dim_h, self.z_dim_w, self.z_dim_d)
+            out = self.decoder(out)
 
         return out.squeeze(dim=1)
 

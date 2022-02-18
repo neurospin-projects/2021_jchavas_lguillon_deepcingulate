@@ -45,6 +45,7 @@ from toolz.itertoolz import last
 
 from SimCLR.backbones.densenet import DenseNet
 from SimCLR.losses import NTXenLoss
+from SimCLR.losses import CrossEntropyLoss
 from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
 from SimCLR.utils.plots.visualize_images import plot_bucket
 from SimCLR.utils.plots.visualize_images import plot_histogram
@@ -72,7 +73,9 @@ class ContrastiveLearner(DenseNet):
             num_representation_features=config.num_representation_features,
             num_outputs=config.num_outputs,
             mode=config.mode,
-            drop_rate=config.drop_rate)
+            drop_rate=config.drop_rate,
+            in_shape=config.input_size,
+            depth=config.depth_decoder)
         self.config = config
         self.sample_data = sample_data
         self.sample_i = np.array([])
@@ -100,24 +103,35 @@ class ContrastiveLearner(DenseNet):
 
     def configure_optimizers(self):
         """Adam optimizer"""
-        optimizer = torch.optim.Adam(self.parameters(),
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.parameters()),
                                      lr=self.config.lr,
                                      weight_decay=self.config.weight_decay)
         return optimizer
 
     def nt_xen_loss(self, z_i, z_j):
-        """Loss function"""
+        """Loss function for SimCLR"""
         loss = NTXenLoss(temperature=self.config.temperature,
                          return_logits=True)
         return loss.forward(z_i, z_j)
+
+    def cross_entropy_loss(self, input_i, input_j, output_i, output_j):
+        """Loss function for decoder"""
+        loss = CrossEntropyLoss(device=self.device)
+        return loss.forward(input_i, input_j, output_i, output_j)
 
     def training_step(self, train_batch, batch_idx):
         """Training step.
         """
         (inputs, filenames) = train_batch
-        z_i = self.forward(inputs[:, 0, :])
-        z_j = self.forward(inputs[:, 1, :])
-        batch_loss, sim_zij, sim_zii, sim_zjj = self.nt_xen_loss(z_i, z_j)
+        input_i = inputs[:, 0, :]
+        input_j = inputs[:, 1, :]
+        z_i = self.forward(input_i)
+        z_j = self.forward(input_j)
+
+        if self.config.mode == "decoder":
+            batch_loss = self.cross_entropy_loss(input_i, input_j, z_i, z_j)
+        else:
+            batch_loss, sim_zij, sim_zii, sim_zjj = self.nt_xen_loss(z_i, z_j)
         self.log('train_loss', float(batch_loss))
 
         # Only computes graph on first step
@@ -128,9 +142,9 @@ class ContrastiveLearner(DenseNet):
         if batch_idx == 0:
             self.sample_i = inputs[:, 0, :].cpu()
             self.sample_j = inputs[:, 1, :].cpu()
-            self.sim_zij = sim_zij * self.config.temperature
-            self.sim_zii = sim_zii * self.config.temperature
-            self.sim_zjj = sim_zjj * self.config.temperature
+            # self.sim_zij = sim_zij * self.config.temperature
+            # self.sim_zii = sim_zii * self.config.temperature
+            # self.sim_zjj = sim_zjj * self.config.temperature
 
         # logs - a dictionary
         logs = {"train_loss": float(batch_loss)}
@@ -234,24 +248,25 @@ class ContrastiveLearner(DenseNet):
     def training_epoch_end(self, outputs):
         """Computation done at the end of the epoch"""
 
-        # Computes t-SNE both in representation and output space
-        if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 \
-                or self.current_epoch >= self.config.max_epochs:
-            X_tsne = self.compute_tsne(
-                self.sample_data.train_dataloader(), "output")
-            image_TSNE = plot_tsne(X_tsne, buffer=True)
-            self.logger.experiment.add_image(
-                'TSNE output image', image_TSNE, self.current_epoch)
-            X_tsne = self.compute_tsne(
-                self.sample_data.train_dataloader(), "representation")
-            image_TSNE = plot_tsne(X_tsne, buffer=True)
-            self.logger.experiment.add_image(
-                'TSNE representation image', image_TSNE, self.current_epoch)
+        if self.config.mode == "encoder":
+            # Computes t-SNE both in representation and output space
+            if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 \
+                    or self.current_epoch >= self.config.max_epochs:
+                X_tsne = self.compute_tsne(
+                    self.sample_data.train_dataloader(), "output")
+                image_TSNE = plot_tsne(X_tsne, buffer=True)
+                self.logger.experiment.add_image(
+                    'TSNE output image', image_TSNE, self.current_epoch)
+                X_tsne = self.compute_tsne(
+                    self.sample_data.train_dataloader(), "representation")
+                image_TSNE = plot_tsne(X_tsne, buffer=True)
+                self.logger.experiment.add_image(
+                    'TSNE representation image', image_TSNE, self.current_epoch)
 
-        # Computes histogram of sim_zij
-        histogram_sim_zij = plot_histogram(self.sim_zij, buffer=True)
-        self.logger.experiment.add_image(
-            'histo_sim_zij', histogram_sim_zij, self.current_epoch)
+            # Computes histogram of sim_zij
+            histogram_sim_zij = plot_histogram(self.sim_zij, buffer=True)
+            self.logger.experiment.add_image(
+                'histo_sim_zij', histogram_sim_zij, self.current_epoch)
 
         # Plots views
         image_input_i = plot_bucket(self.sample_i, buffer=True)
@@ -300,9 +315,15 @@ class ContrastiveLearner(DenseNet):
         """Validation step"""
 
         (inputs, filenames) = val_batch
-        z_i = self.forward(inputs[:, 0, :])
-        z_j = self.forward(inputs[:, 1, :])
-        batch_loss, sim_zij, sim_zii, sim_zjj = self.nt_xen_loss(z_i, z_j)
+        input_i = inputs[:, 0, :]
+        input_j = inputs[:, 1, :]
+        z_i = self.forward(input_i)
+        z_j = self.forward(input_j)
+
+        if self.config.mode == "decoder":
+            batch_loss = self.cross_entropy_loss(input_i, input_j, z_i, z_j)
+        else:
+            batch_loss, sim_zij, sim_zii, sim_zjj = self.nt_xen_loss(z_i, z_j)
         self.log('val_loss', float(batch_loss))
 
         # logs- a dictionary
@@ -322,21 +343,22 @@ class ContrastiveLearner(DenseNet):
         """Computaion done at the end of each validation epoch"""
 
         # Computes t-SNE
-        if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 \
-                or self.current_epoch >= self.config.max_epochs:
-            X_tsne = self.compute_tsne(
-                self.sample_data.val_dataloader(), "output")
-            image_TSNE = plot_tsne(X_tsne, buffer=True)
-            self.logger.experiment.add_image(
-                'TSNE output validation image', image_TSNE, self.current_epoch)
-            X_tsne = self.compute_tsne(
-                self.sample_data.val_dataloader(),
-                "representation")
-            image_TSNE = plot_tsne(X_tsne, buffer=True)
-            self.logger.experiment.add_image(
-                'TSNE representation validation image',
-                image_TSNE,
-                self.current_epoch)
+        if self.config.mode == "encoder":
+            if self.current_epoch % self.config.nb_epochs_per_tSNE == 0 \
+                    or self.current_epoch >= self.config.max_epochs:
+                X_tsne = self.compute_tsne(
+                    self.sample_data.val_dataloader(), "output")
+                image_TSNE = plot_tsne(X_tsne, buffer=True)
+                self.logger.experiment.add_image(
+                    'TSNE output validation image', image_TSNE, self.current_epoch)
+                X_tsne = self.compute_tsne(
+                    self.sample_data.val_dataloader(),
+                    "representation")
+                image_TSNE = plot_tsne(X_tsne, buffer=True)
+                self.logger.experiment.add_image(
+                    'TSNE representation validation image',
+                    image_TSNE,
+                    self.current_epoch)
 
         # Plots one representation image
         # image_output = plot_output(

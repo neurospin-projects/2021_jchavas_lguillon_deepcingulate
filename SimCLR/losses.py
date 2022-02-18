@@ -149,6 +149,38 @@ class NTXenLoss(nn.Module):
         return "{}(temp={})".format(type(self).__name__, self.temperature)
 
 
+class CrossEntropyLoss(nn.Module):
+    """
+    Normalized Temperature Cross-Entropy Loss for Constrastive Learning
+    Refer for instance to:
+    Ting Chen, Simon Kornblith, Mohammad Norouzi, Geoffrey Hinton
+    A Simple Framework for Contrastive Learning of Visual Representations,
+    arXiv 2020
+    """
+
+    def __init__(self, weights=[1, 2], reduction='sum', device=None):
+        super().__init__()
+        self.class_weights = torch.FloatTensor(weights).to(device)
+        self.reduction = reduction
+        self.loss = nn.CrossEntropyLoss(weight=self.class_weights,
+                                        reduction=self.reduction)
+
+    def forward(self, input_i, input_j, output_i, output_j):
+        input_i = (input_i >= 1).long()
+        input_j = (input_j >= 1).long()
+        output_i = output_i.float()
+        output_j = output_j.float()
+        
+        loss_i = self.loss(output_i,
+                           input_i[:, 0, :, :, :])
+        loss_j = self.loss(output_j,
+                           input_j[:, 0, :, :, :])
+
+        return (loss_i + loss_j)
+
+    def __str__(self):
+        return "{}(temp={})".format(type(self).__name__, self.temperature)
+
 class NTXenLoss_WithoutHardNegative(nn.Module):
     """
     Normalized Temperature Cross-Entropy Loss for Constrastive Learning
