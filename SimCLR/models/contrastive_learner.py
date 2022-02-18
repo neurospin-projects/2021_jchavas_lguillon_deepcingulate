@@ -114,10 +114,10 @@ class ContrastiveLearner(DenseNet):
                          return_logits=True)
         return loss.forward(z_i, z_j)
 
-    def cross_entropy_loss(self, input_i, input_j, output_i, output_j):
+    def cross_entropy_loss(self, sample, output_i, output_j):
         """Loss function for decoder"""
         loss = CrossEntropyLoss(device=self.device)
-        return loss.forward(input_i, input_j, output_i, output_j)
+        return loss.forward(sample, output_i, output_j)
 
     def training_step(self, train_batch, batch_idx):
         """Training step.
@@ -129,9 +129,11 @@ class ContrastiveLearner(DenseNet):
         z_j = self.forward(input_j)
 
         if self.config.mode == "decoder":
-            batch_loss = self.cross_entropy_loss(input_i, input_j, z_i, z_j)
+            sample = inputs[:, 2, :]
+            batch_loss = self.cross_entropy_loss(sample, z_i, z_j)
         else:
             batch_loss, sim_zij, sim_zii, sim_zjj = self.nt_xen_loss(z_i, z_j)
+
         self.log('train_loss', float(batch_loss))
 
         # Only computes graph on first step
@@ -321,7 +323,8 @@ class ContrastiveLearner(DenseNet):
         z_j = self.forward(input_j)
 
         if self.config.mode == "decoder":
-            batch_loss = self.cross_entropy_loss(input_i, input_j, z_i, z_j)
+            sample = inputs[:, 2, :]
+            batch_loss = self.cross_entropy_loss(sample, z_i, z_j)
         else:
             batch_loss, sim_zij, sim_zii, sim_zjj = self.nt_xen_loss(z_i, z_j)
         self.log('val_loss', float(batch_loss))

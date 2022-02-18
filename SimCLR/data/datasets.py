@@ -123,10 +123,23 @@ class ContrastiveDataset():
             BinarizeTensor()
         ])
 
+        # - padding
+        self.transform3 = transforms.Compose([
+            SimplifyTensor(),
+            PaddingTensor(self.config.input_size,
+                          fill_value=self.config.fill_value),
+            BinarizeTensor(),
+            EndTensor()
+        ])
+
         view1 = self.transform1(sample)
         view2 = self.transform2(sample)
 
-        views = torch.stack((view1, view2), dim=0)
+        if self.config.mode == "decoder":
+            view3 = self.transform3(sample)
+            views = torch.stack((view1, view2, view3), dim=0)
+        else:
+            views = torch.stack((view1, view2), dim=0)
 
         tuple_with_path = (views, filename)
         return tuple_with_path

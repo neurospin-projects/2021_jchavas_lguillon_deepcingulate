@@ -165,16 +165,15 @@ class CrossEntropyLoss(nn.Module):
         self.loss = nn.CrossEntropyLoss(weight=self.class_weights,
                                         reduction=self.reduction)
 
-    def forward(self, input_i, input_j, output_i, output_j):
-        input_i = (input_i >= 1).long()
-        input_j = (input_j >= 1).long()
+    def forward(self, sample, output_i, output_j):
+        sample = (sample >= 1).long()
         output_i = output_i.float()
         output_j = output_j.float()
         
         loss_i = self.loss(output_i,
-                           input_i[:, 0, :, :, :])
+                           sample[:, 0, :, :, :])
         loss_j = self.loss(output_j,
-                           input_j[:, 0, :, :, :])
+                           sample[:, 0, :, :, :])
 
         return (loss_i + loss_j)
 
