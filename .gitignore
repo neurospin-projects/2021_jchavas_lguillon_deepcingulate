@@ -118,6 +118,7 @@ venv.bak/
 .vscode
 
 # run folders
+runs
 SimCLR/runs
 SimCLR/outputs
 SimCLR/evaluation/runs
@@ -125,6 +126,8 @@ SimCLR/evaluation/outputs
 SimCLR/notebooks/COPYING
 SimCLR/notebooks/mni_icbm152_nlin_asym_09c
 SimCLR/notebooks/temp
+SimCLR/notebooks/*.bck
+SimCLR/notebooks/*.bck.minf
 
 # Rope project settings
 .ropeproject
