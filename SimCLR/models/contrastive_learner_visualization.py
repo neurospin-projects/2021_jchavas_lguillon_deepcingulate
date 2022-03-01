@@ -44,9 +44,9 @@ from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
 
 class ContrastiveLearner_Visualization(ContrastiveLearner):
 
-    def __init__(self, config, mode, sample_data):
+    def __init__(self, config, sample_data):
         super(ContrastiveLearner_Visualization, self).__init__(
-            config=config, mode=mode, sample_data=sample_data)
+            config=config, sample_data=sample_data)
         self.config = config
         self.sample_data = sample_data
         self.sample_i = []

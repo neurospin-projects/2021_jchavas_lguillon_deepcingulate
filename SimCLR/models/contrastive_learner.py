@@ -191,6 +191,33 @@ class ContrastiveLearner(DenseNet):
 
         return X, filenames_list
 
+
+    def compute_decoder_outputs_skeletons(self, loader):
+        """Computes the outputs of the model for each crop.
+
+        This includes the projection head"""
+
+        # Initialization
+        X = torch.zeros([0, 2, 20, 40, 40]).cpu()
+        filenames_list = []
+
+        # Computes embeddings without computing gradient
+        with torch.no_grad():
+            for (inputs, filenames) in loader:
+                # First views of the whole batch
+                inputs = inputs.cuda()
+                model = self.cuda()
+                X_i = model.forward(inputs[:, 0, :])
+                print(f"shape X and X_i: {X.shape}, {X_i.shape}")
+                # First views re put side by side
+                X = torch.cat((X, X_i.cpu()), dim=0)
+                filenames_duplicate = [item
+                                       for item in filenames]
+                filenames_list = filenames_list + filenames_duplicate
+                del inputs
+
+        return X, filenames_list
+
     def compute_representations(self, loader):
         """Computes representations for each crop.
 
