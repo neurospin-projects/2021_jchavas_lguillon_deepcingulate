@@ -118,7 +118,7 @@ class ContrastiveDataset():
             SimplifyTensor(),
             PaddingTensor(self.config.input_size,
                           fill_value=self.config.fill_value),
-            PartialCutOutTensor_Roll(from_skeleton=True,
+            PartialCutOutTensor_Roll(from_skeleton=False,
                                      keep_bottom=self.config.keep_bottom,
                                      patch_size=self.config.patch_size),
             RotateTensor(max_angle=self.config.max_angle),
