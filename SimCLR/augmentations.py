@@ -218,10 +218,11 @@ class PartialCutOutTensor_Roll(object):
     We assume that the rectangle to be cut is inside the image.
     """
 
-    def __init__(self, from_skeleton=True, patch_size=None, random_size=False,
+    def __init__(self, from_skeleton=True, keep_bottom=True, patch_size=None, random_size=False,
                  localization=None):
         """[summary]
 
+        If from_skeleton==True,
             takes skeleton image, cuts it out and fills with bottom_only image
         If from_skeleton==False,
             takes bottom_only image, cuts it out and fills with skeleton image
@@ -237,6 +238,7 @@ class PartialCutOutTensor_Roll(object):
         self.random_size = random_size
         self.localization = localization
         self.from_skeleton = from_skeleton
+        self.keep_bottom = keep_bottom
 
     def __call__(self, tensor):
 
@@ -280,13 +282,19 @@ class PartialCutOutTensor_Roll(object):
         # This keeps the whole skeleton outside the cutout
         # and keeps only bottom value inside the cutout
         if self.from_skeleton:
-            arr_inside = arr_inside * (arr_inside == 30)
+            if self.keep_bottom:
+                arr_inside = arr_inside * (arr_inside == 30)
+            else:
+                arr_inside = arr_inside * (arr_inside == 0)
 
         # If self.from_skeleton == False:
         # This keeps only bottom value outside the cutout
         # and keeps the whole skeleton inside the cutout
         else:
-            arr_outside = arr_outside * (arr_outside == 30)
+            if self.keep_bottom:
+                arr_outside = arr_outside * (arr_outside == 30)
+            else:
+                arr_outside = arr_outside * (arr_outside == 0)
 
         return torch.from_numpy(arr_inside + arr_outside)
 

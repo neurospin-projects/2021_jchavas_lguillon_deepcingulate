@@ -144,9 +144,10 @@ class ContrastiveLearner(DenseNet):
         if batch_idx == 0:
             self.sample_i = inputs[:, 0, :].cpu()
             self.sample_j = inputs[:, 1, :].cpu()
-            # self.sim_zij = sim_zij * self.config.temperature
-            # self.sim_zii = sim_zii * self.config.temperature
-            # self.sim_zjj = sim_zjj * self.config.temperature
+            if self.config.mode != "decoder":
+                self.sim_zij = sim_zij * self.config.temperature
+                self.sim_zii = sim_zii * self.config.temperature
+                self.sim_zjj = sim_zjj * self.config.temperature
 
         # logs - a dictionary
         logs = {"train_loss": float(batch_loss)}

@@ -87,11 +87,13 @@ def postprocessing_results(config: DictConfig) -> None:
     # in: pytorch, numpy, python.random
     # seed_everything(config.seed)
 
-    # Trick
-    # Makes a dummy plot before invoking anatomist in headless mode
-    if not config.analysis_path:
-        plot = plt.figure()
-        plt.ion()
+"""
+We call:
+- embedding, the space before the projection head.
+  The elements of the space are features
+- output, the space after the projection head.
+  The elements are called output vectors
+"""
         plt.show()
         plt.pause(0.001)
 
