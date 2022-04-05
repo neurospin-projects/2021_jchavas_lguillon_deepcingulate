@@ -18,7 +18,9 @@ We launch the training from SimCLR folder:
 
 .. code-block:: shell
 
-    python3 train.py
+    python3 main.py
+
+It will save the file in the folder ../../../Output/YYY-MM-DD/HH-MM-SS
 
 Evaluate results
 ================
