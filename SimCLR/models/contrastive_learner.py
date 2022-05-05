@@ -45,11 +45,15 @@ from toolz.itertoolz import last
 
 from SimCLR.backbones.densenet import DenseNet
 from SimCLR.losses import NTXenLoss
-from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
+
 from SimCLR.utils.plots.visualize_images import plot_bucket
 from SimCLR.utils.plots.visualize_images import plot_histogram
 from SimCLR.utils.plots.visualize_tsne import plot_tsne
 
+try:
+    from SimCLR.utils.plots.visualize_anatomist import Visu_Anatomist
+except ImportError:
+    print("INFO: you are probably not in a brainvisa environment. Probably OK.")
 
 class SaveOutput:
     def __init__(self):
@@ -80,7 +84,8 @@ class ContrastiveLearner(DenseNet):
         self.save_output = SaveOutput()
         self.hook_handles = []
         self.get_layers()
-        self.visu_anatomist = Visu_Anatomist()
+        if self.config.environment == "brainvisa":
+            self.visu_anatomist = Visu_Anatomist()
 
     def get_layers(self):
         for layer in self.modules():
@@ -262,14 +267,15 @@ class ContrastiveLearner(DenseNet):
             'input_j', image_input_j, self.current_epoch)
 
         # Plots view using anatomist
-        image_input_i = self.visu_anatomist.plot_bucket(
-            self.sample_i, buffer=True)
-        self.logger.experiment.add_image(
-            'input_ana_i', image_input_i, self.current_epoch)
-        image_input_j = self.visu_anatomist.plot_bucket(
-            self.sample_j, buffer=True)
-        self.logger.experiment.add_image(
-            'input_ana_j', image_input_j, self.current_epoch)
+        if self.config.environment == "brainvisa":
+            image_input_i = self.visu_anatomist.plot_bucket(
+                self.sample_i, buffer=True)
+            self.logger.experiment.add_image(
+                'input_ana_i', image_input_i, self.current_epoch)
+            image_input_j = self.visu_anatomist.plot_bucket(
+                self.sample_j, buffer=True)
+            self.logger.experiment.add_image(
+                'input_ana_j', image_input_j, self.current_epoch)
 
         # Plots one representation image
         # image_output = plot_output(
