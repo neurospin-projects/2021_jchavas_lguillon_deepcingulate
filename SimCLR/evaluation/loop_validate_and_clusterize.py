@@ -72,8 +72,10 @@ def loop_over_directory(src_dir, csv_file):
     for deep_dir in dirnames:
         deep_dir = os.path.abspath(deep_dir)
         analysis_path = f"{deep_dir}"
+        print(f"deep_dir= {deep_dir}")
         checkpoint_file = glob.glob(
-            f"{deep_dir}/logs/default/version_0/checkpoints/*.ckpt")
+            f"{deep_dir}/logs/*/version_0/checkpoints/*.ckpt")
+        print(f"checkpoint_file = {checkpoint_file}")
         checkpoint_file = os.path.abspath(checkpoint_file[0])
         checkpoint_path = f"'\"{checkpoint_file}\"'"
         config_path = f"{deep_dir}/.hydra"
